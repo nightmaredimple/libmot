@@ -10,6 +10,8 @@ cd libmot/
 pip install -r requirements.txt
 ```
 
+The details can be seen from my [blogs](https://huangpiao.tech/) or [zhihu](https://www.zhihu.com/people/huang-piao-72/posts).
+
 ## Motion Model
 
 1.Kalman Filter
