@@ -23,7 +23,7 @@ fading_memory = 1.14          # fading memory for prediction
 dt = 0.15                     # time step for prediction
 std_weight_position = 0.04    # std of position prediction
 std_weight_velocity = 0.05    # std of velocity prediction
-patience = 8                  # patience for waiting reconnection
+patience = 2                  # patience for waiting reconnection
 min_len = 4                   # mininum length of active trajectory
 dir_path =  'E:\\datasets\\MOT17\\train\\MOT17-10-SDP\\'
 
