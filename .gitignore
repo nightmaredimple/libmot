@@ -1,0 +1,13 @@
+.idea/
+venv
+test.py
+
+
+__pycache__/
+motion/__pycache__/
+data_association/__pycache__/
+reid/action_map
+output*/
+images/*benchmark*.png
+.python-version
+*.npy
