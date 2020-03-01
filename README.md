@@ -1,4 +1,4 @@
-#  Framework of Multi Object Tracking
+#  A Library of Multi-Object Tracking in Python and Pytorch
 
 ## Installation
 
@@ -10,7 +10,15 @@ cd libmot/
 pip install -r requirements.txt
 ```
 
+## Motion Model
 
+1.Kalman Filter
 
+```python
+python scripts/test_kalman_tracker.py
+```
 
+ <div align="center">
+  <img src="figures/kalman_tracker.png"  />
+ </div>
 
