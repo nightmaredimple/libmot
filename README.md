@@ -16,7 +16,7 @@ The details can be seen from my [blogs](https://huangpiao.tech/) or [zhihu](http
 
 |          Block          |               Method                |       Reference        | Complete |
 | :---------------------: | :---------------------------------: | :--------------------: | :------: |
-|                         |           IOU Assignment            |   iou-tracker&V-IOU    |    ☐     |
+|                         |           IOU Assignment            |   iou-tracker&V-IOU    |    ✓     |
 |                         |          Linear Assignment          |           -            |    ✓     |
 |  **Data Association**   |             MinCostFlow             |          MCF           |    ☐     |
 |                         |      Other End-to-End Network       |     FAMNet&DeepMOT     |    ☐     |
@@ -38,7 +38,7 @@ The details can be seen from my [blogs](https://huangpiao.tech/) or [zhihu](http
 |                         |                DIMP                 |          DIMP          |    ☐     |
 | ----------------------- | ----------------------------------- | ---------------------- |   ---    |
 |                         |             DataLoader              |           -            |    ✓     |
-|       **Tricks**        |          Spatial Blocking           |           -            |    ☐     |
+|       **Tricks**        |          Spatial Blocking           |           -            |    ✓     |
 | ----------------------- | ----------------------------------- | ---------------------- |   ---    |
 |                         |             Evaluation              |           -            |    ✓     |
 |       **Others**        |        Tracking Visualiztion        |           -            |    ✓     |
