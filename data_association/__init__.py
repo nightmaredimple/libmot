@@ -1,1 +1,2 @@
 from .linear_assignment import LinearAssignment
+from .iou_assignment import GreedyAssignment
