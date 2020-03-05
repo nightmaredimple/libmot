@@ -14,32 +14,39 @@ The details can be seen from my [blogs](https://huangpiao.tech/) or [zhihu](http
 
 ## Feature Lists
 
-|        Block         |          Method          |     Reference     | Complete |
-| :------------------: | :----------------------: | :---------------: | :------: |
-|                      |      IOU Assignment      | iou-tracker&V-IOU |    ☐     |
-|                      |    Linear Assignment     |         -         |    ✓     |
-| **Data Association** |       MinCostFlow        |        MCF        |    ☐     |
-|                      | Other End-to-End Network |  FAMNet&DeepMOT   |    ☐     |
-|                      |         GNN&GCN          |     MPNTrack      |    ☐     |
-|                      |      Kalman Filter       |   Sort&DeepSort   |    ✓     |
-|      **Motion**      |           ECC            |    Tracktor++     |    ☐     |
-|                      |    Epipolar Geometry     |        TNT        |    ☐     |
-|                      |       Optical Flow       |         -         |    ☐     |
-|                      |          Re-ID           |         -         |    ☐     |
-|    **Appearance**    |      Feature Fusion      |         -         |    ☐     |
-|                      |    Feature Selection     |         -         |    ☐     |
-|    **Detection**     |    Faster RCNN + FPN     |    Tracktor++     |    ☐     |
-|                      |           KCF            |      KCF&CN       |    ☐     |
-|       **SOT**        |     SiamRPN&SiamMask     | SiamRPN&SiamMask  |    ☐     |
-|                      |           DIMP           |       DIMP        |    ☐     |
-|                      |        DataLoader        |         -         |    ✓     |
-|      **Tricks**      |     Spatial Blocking     |         -         |    ☐     |
-|                      |                          |                   |          |
-|                      |        Evaluation        |         -         |    ✓     |
-|      **Others**      |  Tracking Visualiztion   |         -         |    ✓     |
-|                      |   Feature Visualiztion   |         -         |    ☐     |
-|     **Tracktor**     |        MIFT(ours)        |         -         |    ☐     |
-|     **Detector**     |        MIFD(ours)        |         -         |    ☐     |
+|          Block          |               Method                |       Reference        | Complete |
+| :---------------------: | :---------------------------------: | :--------------------: | :------: |
+|                         |           IOU Assignment            |   iou-tracker&V-IOU    |    ☐     |
+|                         |          Linear Assignment          |           -            |    ✓     |
+|  **Data Association**   |             MinCostFlow             |          MCF           |    ☐     |
+|                         |      Other End-to-End Network       |     FAMNet&DeepMOT     |    ☐     |
+|                         |               GNN&GCN               |        MPNTrack        |    ☐     |
+| ----------------------- | ----------------------------------- | ---------------------- |   ---    |
+|                         |            Kalman Filter            |     Sort&DeepSort      |    ✓     |
+|       **Motion**        |                 ECC                 |       Tracktor++       |    ☐     |
+|                         |          Epipolar Geometry          |          TNT           |    ☐     |
+|                         |            Optical Flow             |           -            |    ☐     |
+| ----------------------- | ----------------------------------- | ---------------------- |   ---    |
+|                         |                Re-ID                |           -            |    ☐     |
+|     **Appearance**      |           Feature Fusion            |           -            |    ☐     |
+|                         |          Feature Selection          |           -            |    ☐     |
+| ----------------------- | ----------------------------------- | ---------------------- |   ---    |
+|      **Detection**      |          Faster RCNN + FPN          |       Tracktor++       |    ☐     |
+| ----------------------- | ----------------------------------- | ---------------------- |   ---    |
+|                         |                 KCF                 |         KCF&CN         |    ☐     |
+|         **SOT**         |          SiamRPN&SiamMask           |    SiamRPN&SiamMask    |    ☐     |
+|                         |                DIMP                 |          DIMP          |    ☐     |
+| ----------------------- | ----------------------------------- | ---------------------- |   ---    |
+|                         |             DataLoader              |           -            |    ✓     |
+|       **Tricks**        |          Spatial Blocking           |           -            |    ☐     |
+| ----------------------- | ----------------------------------- | ---------------------- |   ---    |
+|                         |             Evaluation              |           -            |    ✓     |
+|       **Others**        |        Tracking Visualiztion        |           -            |    ✓     |
+|                         |        Feature Visualiztion         |           -            |    ☐     |
+| ----------------------- | ----------------------------------- | ---------------------- |   ---    |
+|      **Tracktor**       |             MIFT(ours)              |           -            |    ☐     |
+| ----------------------- | ----------------------------------- | ---------------------- |   ---    |
+|      **Detector**       |             MIFD(ours)              |           -            |    ☐     |
 
 
 
