@@ -59,7 +59,7 @@ python scripts/test_kalman_tracker.py
  <div align="center">
   <img src="figures/kalman_tracker.png"  />
  </div>
-## **Data Association**
+## Data Association
 
  <div align="center">
   <img src="figures/linear_assignment.png"  />
