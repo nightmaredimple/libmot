@@ -12,9 +12,40 @@ pip install -r requirements.txt
 
 The details can be seen from my [blogs](https://huangpiao.tech/) or [zhihu](https://www.zhihu.com/people/huang-piao-72/posts).
 
+## Feature Lists
+
+|        Block         |          Method          |     Reference     | Complete |
+| :------------------: | :----------------------: | :---------------: | :------: |
+|                      |      IOU Assignment      | iou-tracker&V-IOU |    ☐     |
+|                      |    Linear Assignment     |         -         |    ✓     |
+| **Data Association** |       MinCostFlow        |        MCF        |    ☐     |
+|                      | Other End-to-End Network |  FAMNet&DeepMOT   |    ☐     |
+|                      |         GNN&GCN          |     MPNTrack      |    ☐     |
+|                      |      Kalman Filter       |   Sort&DeepSort   |    ✓     |
+|      **Motion**      |           ECC            |    Tracktor++     |    ☐     |
+|                      |    Epipolar Geometry     |        TNT        |    ☐     |
+|                      |       Optical Flow       |         -         |    ☐     |
+|                      |          Re-ID           |         -         |    ☐     |
+|    **Appearance**    |      Feature Fusion      |         -         |    ☐     |
+|                      |    Feature Selection     |         -         |    ☐     |
+|    **Detection**     |    Faster RCNN + FPN     |    Tracktor++     |    ☐     |
+|                      |           KCF            |      KCF&CN       |    ☐     |
+|       **SOT**        |     SiamRPN&SiamMask     | SiamRPN&SiamMask  |    ☐     |
+|                      |           DIMP           |       DIMP        |    ☐     |
+|                      |        DataLoader        |         -         |    ✓     |
+|      **Tricks**      |     Spatial Blocking     |         -         |    ☐     |
+|                      |                          |                   |          |
+|                      |        Evaluation        |         -         |    ✓     |
+|      **Others**      |  Tracking Visualiztion   |         -         |    ✓     |
+|                      |   Feature Visualiztion   |         -         |    ☐     |
+|     **Tracktor**     |        MIFT(ours)        |         -         |    ☐     |
+|     **Detector**     |        MIFD(ours)        |         -         |    ☐     |
+
+
+
 ## Motion Model
 
-1.Kalman Filter
+### 1.Kalman Filter
 
 ```python
 python scripts/test_kalman_tracker.py
@@ -24,3 +55,5 @@ python scripts/test_kalman_tracker.py
   <img src="figures/kalman_tracker.png"  />
  </div>
 
+
+To be continued..
