@@ -8,7 +8,8 @@ progressbar==2.5
 pillow>=6.2.0
 motmetrics==1.1.3
 path.py==12.0.1
-
-
+ortools>=7.4.7247
+torch==1.3.1
+torchvision==0.4.2
 
 

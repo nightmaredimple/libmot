@@ -18,7 +18,7 @@ The details can be seen from my [blogs](https://huangpiao.tech/) or [zhihu](http
 | :---------------------: | :---------------------------------: | :--------------------: | :------: |
 |                         |           IOU Assignment            |   iou-tracker&V-IOU    |    ✓     |
 |                         |          Linear Assignment          |           -            |    ✓     |
-|  **Data Association**   |             MinCostFlow             |          MCF           |    ☐     |
+|  **Data Association**   |             MinCostFlow             |          MCF           |    ✓     |
 |                         |      Other End-to-End Network       |     FAMNet&DeepMOT     |    ☐     |
 |                         |               GNN&GCN               |        MPNTrack        |    ☐     |
 | ----------------------- | ----------------------------------- | ---------------------- |   ---    |
