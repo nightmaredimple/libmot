@@ -5,14 +5,13 @@
 
 import torch
 
-
-def nms_torch(bboxes, scores, threshold = 0.5):
+def nms_torch(bboxes, scores, threshold=0.5):
     """Non Maximum Suppression
 
     Parameters
     ----------
     bboxes : tensor (N,4)
-        A Nx4 matrix of bounding boxes in format `(top left x, top left y, width, height)`.
+        A Nx4 matrix of bounding boxes in format `(top left x, top left y, bottom right x, bottom right y)`.
     scores : tensor (N,)
         A vector of detection scores for bboxes.
     threshold: float
@@ -22,8 +21,8 @@ def nms_torch(bboxes, scores, threshold = 0.5):
     keep : tensor (K, )
         A vector of indexes for remained bboxes.
     """
-    area = bboxes[:, 2] * bboxes[:, 3]
-    bboxes[:, 2:] = bboxes[:, :2] + bboxes[:, 2:]
+    area = (bboxes[:, 2] - bboxes[:, 0]) * (bboxes[:, 3] - bboxes[:, 1])
+
     x1 = bboxes[:, 0]
     y1 = bboxes[:, 1]
     x2 = bboxes[:, 2]
@@ -33,7 +32,8 @@ def nms_torch(bboxes, scores, threshold = 0.5):
 
     keep = []
     while order.numel() > 0:
-        if order.numel == 1:
+
+        if order.numel() == 1:
             keep.append(order.item())
             break
         else:
