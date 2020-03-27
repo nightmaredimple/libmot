@@ -23,8 +23,8 @@ The details can be seen from my [blogs](https://huangpiao.tech/) or [zhihu](http
 |                         |               GNN&GCN               |        MPNTrack        |    ☐     |
 | ----------------------- | ----------------------------------- | ---------------------- |   ---    |
 |                         |            Kalman Filter            |     Sort&DeepSort      |    ✓     |
-|       **Motion**        |                 ECC                 |       Tracktor++       |    ☐     |
-|                         |          Epipolar Geometry          |          TNT           |    ☐     |
+|       **Motion**        |                 ECC                 |       Tracktor++       |    ✓     |
+|                         |          Epipolar Geometry          |          TNT           |    ✓     |
 |                         |            Optical Flow             |           -            |    ☐     |
 | ----------------------- | ----------------------------------- | ---------------------- |   ---    |
 |                         |                Re-ID                |           -            |    ☐     |
