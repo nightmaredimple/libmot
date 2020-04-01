@@ -13,12 +13,12 @@ from motion.epipolar_geometry import Epipolar
 
 # parameter
 thresh = 0.7                  # threshold for detection
-n_points = 500                # numbers of matched points to be considered
+n_points = 100                # numbers of matched points to be considered
 n_levels = 6                  # levels for orb
-n_features = 70               # numbers of features to be extract
+n_features = 50               # numbers of features to be extract
 n_matches = 30                # number of matched points to be drawn
-src_index = 502               # src image index
-dst_index = 505               # dst image index
+src_index = 498               # src image index
+dst_index = 500               # dst image index
 dir_path = 'E:\\datasets\\MOT17\\train\\MOT17-13-SDP\\'
 
 # prefetch
@@ -28,6 +28,7 @@ dst = cv2.imread(dir_path + 'img1\\00%04d.jpg' % dst_index)
 dets = np.genfromtxt(dir_path + 'det\\det.txt', delimiter=',')
 dets = dets[(dets[:, 0] == src_index) & (dets[:, 6] > thresh), 2:6]
 dets = dets.astype(np.int32)
+import time
 
 # init Epipolar, n_points means thenumbers of matched points to be considered
 Model = Epipolar(n_points=n_points, nlevels=n_levels, nfeatures=n_features)
