@@ -3,8 +3,6 @@
 # Email  : hongweiwang@hust.edu.cn
 # Date   : 13/12/2019
 
-import glob
-import os
 import motmetrics as mm
 import pandas as pd
 import numpy as np

@@ -5,15 +5,12 @@
 
 import numpy as np
 import cv2
-import sys
-import os
 import matplotlib.pyplot as plt
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from data_association  import MinCostFlowTracker
+from libmot.data_association  import MinCostFlowTracker
 from copy import deepcopy
 import time
-from utils import iou
+from libmot.utils import iou
 import motmetrics as mm
 import pandas as pd
 import colorsys

@@ -5,14 +5,11 @@
 
 import numpy as np
 import cv2
-import sys
-import os
 import matplotlib.pyplot as plt
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from tracker import LinearMotion,chi2inv95
+from libmot.tracker import LinearMotion,chi2inv95
 from copy import deepcopy
-from utils import iou_blocking, evaluation_mot
-from data_association import LinearAssignment, MCFAssignment
+from libmot.utils import iou_blocking, evaluation_mot
+from libmot.data_association import LinearAssignment, MCFAssignment
 import colorsys
 
 # parameter

@@ -4,11 +4,8 @@
 # Date   : 6/11/2019
 
 from __future__ import division
-import os
-import sys
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import numpy as np
-from motion import KalmanFilter
+from libmot.motion import KalmanFilter
 from copy import deepcopy
 
 """

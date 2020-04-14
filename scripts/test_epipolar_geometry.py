@@ -5,11 +5,8 @@
 
 import numpy as np
 import cv2
-import sys
-import os
 import matplotlib.pyplot as plt
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from motion.epipolar_geometry import Epipolar
+from libmot.motion import Epipolar
 
 # parameter
 thresh = 0.7                  # threshold for detection

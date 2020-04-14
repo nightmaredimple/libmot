@@ -3,11 +3,8 @@
 # Email  : huangpiao2985@163.com
 # Date   : 23/12/2019
 
-import sys
-import os
 import time
 import numpy as np
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from .iou import iou
 
 def iou_blocking(tracks, dets, region_shape):
