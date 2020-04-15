@@ -31,9 +31,9 @@ class MinCostFlowTracker(object):
         transition_model: function
             cost for connecting the track with the detection, usually be non-negative,eg:-ln(prob)
         feature_model: function
-            get feature for transition model or other model
+            get feature for transition models or other models
         batch_size: int
-            batch size for feature model
+            batch size for feature models
         entry_exit_cost: float
             cost for source -> trajectory and trajectory -> sink
         min_flow: int
@@ -95,9 +95,9 @@ class MinCostFlowTracker(object):
         features : Optional[ndarray]
             Optionally, an NxL dimensional array of N feature vectors
             corresponding to the given boxes. If None given, bgr_image must not
-            be None and the tracker must be given a feature model for feature
+            be None and the tracker must be given a feature models for feature
             extraction on construction.
-        **kwargs : other parameters that model needed
+        **kwargs : other parameters that models needed
 
         Returns
         -------
@@ -115,7 +115,7 @@ class MinCostFlowTracker(object):
                       'miss_rate': self.miss_rate, 'batch_size': self.batch_size}
         parameters.update(kwargs)
         if features is None:
-            assert self.feature_model is not None, "No feature model given"
+            assert self.feature_model is not None, "No feature models given"
             features = self.feature_model(**parameters)
 
 

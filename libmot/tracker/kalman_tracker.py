@@ -39,9 +39,9 @@ class LinearMotion(object):
         contains the bounding box center position (x, y), aspect ratio a, height h,
         and their respective velocities.
 
-        Object motion follows a constant velocity model. The bounding box location
+        Object motion follows a constant velocity models. The bounding box location
         (x, y, a, h) is taken as direct observation of the state space (linear
-        observation model).
+        observation models).
 
         Parameters
         --------------

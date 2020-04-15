@@ -37,7 +37,7 @@ def ECC(src, dst, warp_mode = cv2.MOTION_EUCLIDEAN, eps = 1e-5,
     -------
     warp matrix : ndarray
         Returns the warp matrix from src to dst.
-        if motion model is homography, the warp matrix will be 3x3, otherwise 2x3
+        if motion models is homography, the warp matrix will be 3x3, otherwise 2x3
     src_aligned: ndarray
         aligned source image of gray
     """

@@ -7,7 +7,6 @@ environments: python 3.6.10, opencv 4.1.1, pytorch 1.3+
 ```bash
 git clone https://github.com/nightmaredimple/libmot --recursive
 cd libmot/
-pip install -r requirements.txt
 python setup.py install develop --user
 ```
 

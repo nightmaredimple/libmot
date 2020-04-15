@@ -2,6 +2,12 @@ import sys
 from os.path import exists
 import re
 from setuptools import find_packages, setup
+import platform
+
+if platform.system() == 'Windows':
+    terminal_requirements = ['blessed==1.17.4']
+else:
+    terminal_requirements = ['blessings==1.7']
 
 
 def parse_requirements(fname='requirements.txt', with_version=True):
@@ -77,7 +83,7 @@ def parse_requirements(fname='requirements.txt', with_version=True):
                 item = ''.join(parts)
                 yield item
 
-    packages = list(gen_packages_items())
+    packages = list(gen_packages_items()) + terminal_requirements
     return packages
 
 
@@ -107,13 +113,4 @@ if __name__ == '__main__':
         author_email='huangpiao2985@163.com',
         license='GPL 3.0',
         install_requires=parse_requirements('requirements.txt'),
-        classifiers=[
-            'Development Status :: 4 - Beta',
-            'License :: OSI Approved :: GPL 3.0 License',
-            'Operating System :: OS Independent',
-            'Programming Language :: Python :: 3',
-            'Programming Language :: Python :: 3.5',
-            'Programming Language :: Python :: 3.6',
-            'Programming Language :: Python :: 3.7',
-        ],
         zip_safe=False)

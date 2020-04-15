@@ -17,7 +17,7 @@ class DataLoader(object):
     def __init__(self, image_path, image_list = None, max_size = 8, color_space = 'BGR', output_size = None, \
                  norm = False, norm_method = 'default', mean = None, std = None, image_type = None,
                  interpolation = cv2.INTER_LINEAR, save_list = ['output'], format = np.uint8, **kwargs):
-        """Data Loader using producer-customer model
+        """Data Loader using producer-customer models
 
         Parameters
         -------------
