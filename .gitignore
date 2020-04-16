@@ -1,6 +1,6 @@
 .idea/
 test.py
-
+log/
 # Byte-compiled / optimized / DLL files
 motion/__pycache__/
 data_association/__pycache__/

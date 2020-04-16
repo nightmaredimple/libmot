@@ -7,10 +7,14 @@ if platform.system() == 'Windows':
     from blessed import Terminal
 else:
     from blessings import Terminal
-from progressbar import *
+
 import sys
+import time
+import logging
+import os.path as osp
+from progressbar import *
 from tensorboardX import SummaryWriter
-import csv
+from libmot.utils import mkdir_or_exist
 
 
 class TermLogger(object):
@@ -178,3 +182,148 @@ class AverageMeter(object):
         return '{} ({})'.format(val, avg)
 
 
+def get_logger(log_file=None, log_level=logging.INFO):
+    """Get the logger.
+
+    The logger will be initialized if it has not been initialized. By default a
+    StreamHandler will be added. If `log_file` is specified, a FileHandler will
+    also be added. The name of the root logger is the top-level package name,
+    e.g., "mmdet".
+
+    Args:
+        log_file (str | None): The log filename. If specified, a FileHandler
+            will be added to the root logger.
+        log_level (int): The root logger level. Note that only the process of
+            rank 0 is affected, while other processes will set the level to
+            "Error" and be silent most of the time.
+
+    Returns:
+        logging.Logger: The root logger.
+    """
+    logger = logging.getLogger(__name__.split('.')[0])
+    # if the logger has been initialized, just return it
+    if logger.hasHandlers():
+        return logger
+
+    format_str = '%(asctime)s - %(levelname)s - %(message)s'
+    logging.basicConfig(filename=log_file, filemode='w', format=format_str, level=log_level)
+    if log_file is not None:
+        file_handler = logging.FileHandler(log_file, 'w')
+        file_handler.setFormatter(logging.Formatter(format_str))
+        file_handler.setLevel(log_level)
+        logger.addHandler(file_handler)
+
+    return logger
+
+
+def print_log(msg, logger=None, level=logging.INFO):
+    """Print a log message.
+
+    Args:
+        msg (str): The message to be logged.
+        logger (logging.Logger | str | None): The logger to be used.
+            Some special loggers are:
+            - "silent": no message will be printed.
+            - other str: the logger obtained with `get_root_logger(logger)`.
+            - None: The `print()` method will be used to print log messages.
+        level (int): Logging level. Only available when `logger` is a Logger
+            object or "root".
+    """
+    if logger is None:
+        print(msg)
+    elif isinstance(logger, logging.Logger):
+        logger.log(level, msg)
+    elif logger == 'silent':
+        pass
+    elif isinstance(logger, str):
+        _logger = get_logger(logger)
+        _logger.log(level, msg)
+    else:
+        raise TypeError(
+            'logger should be either a logging.Logger object, str, '
+            '"silent" or None, but got {}'.format(type(logger)))
+
+
+class LogManager(object):
+    def __init__(self, log_path='log'):
+        """
+
+        Parameters
+        ----------
+        log_path: str
+            it must be a dirname
+        """
+
+        self.n_iter = 0
+        self.train_iters = 0
+        self.valid_iters = 0
+        self.screen_displayer = None
+        self.train_displayer = None
+        self.valid_displayer = None
+
+        t = time.localtime()
+        dirname = time.strftime("%Y-%m-%d %H:%M:%S",t)
+        if platform.system() == 'Windows':
+            dirname = time.strftime("%Y-%m-%d-%H-%M-%S",t)
+
+        self.log_dir = osp.join(log_path, dirname)
+        mkdir_or_exist(self.log_dir)
+        self.log_file = osp.join(self.log_dir, 'log.txt')
+        self.file_logger = get_logger(log_file=self.log_file, log_level=logging.INFO)
+
+    def screen_logger(self, n_epochs, train_iters, valid_iters=0, train_bar_size=2, valid_bar_size=2):
+        """
+        Parameters
+        ----------
+        n_epochs: int
+            number of epochs
+        train_iters: int
+            number of training iterations
+        valid_iters:int
+            number of validation iterations
+        train_bar_size: int
+            height of training bar
+        valid_bar_size: int
+            height of valid bar
+
+        """
+        self.n_epochs = n_epochs
+        self.train_iters = train_iters
+        self.valid_iters = valid_iters
+        self.screen_displayer = TermLogger(n_epochs, train_iters, valid_iters, train_bar_size, valid_bar_size)
+
+    def web_logger(self, is_train=True, is_valid=True):
+        """
+        logging for tensorboardX
+
+        Parameters
+        ----------
+        is_train: bool
+            whether to record during training
+        is_valid: bool
+            whether to record during training
+        Returns
+        -------
+
+        """
+        if is_train:
+            self.train_displayer = SummaryWriter(osp.join(self.log_dir, 'train'))
+
+        if is_valid:
+            self.valid_displayer = SummaryWriter(osp.join(self.log_dir, 'val'))
+
+    def stop(self):
+        """
+            Stop the screen displayer
+        """
+        self.screen_displayer.epoch_bar.finish()
+        if self.train_displayer is not None:
+            self.train_displayer.close()
+        if self.valid_displayer is not None:
+            self.valid_displayer.close()
+
+    def write(self, msg):
+        """
+            Write messages to file logger
+        """
+        self.file_logger.info(msg)
