@@ -5,12 +5,11 @@ from .iou import iou, iou_torch
 from .evaluation import evaluation_mot
 from .nms import nms_torch
 from .path import is_str, is_path, fopen, check_file_exist,\
-    mkdir_or_exist, symlink, scandir
-from .seed import set_random_seed
+    mkdir_or_exist, symlink, scandir, check_folder_exist
 
 
 __all__ = ['iou_blocking', 'generate_videos', 'DataLoader', 'iou',
            'iou_torch', 'evaluation_mot', 'nms_torch', 'is_str',
            'is_path', 'fopen', 'check_file_exist', 'mkdir_or_exist',
-           'symlink', 'scandir', 'set_random_seed']
+           'symlink', 'scandir', 'check_folder_exist']
 

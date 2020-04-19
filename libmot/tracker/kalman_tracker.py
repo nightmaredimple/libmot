@@ -24,6 +24,7 @@ chi2inv95 = {
     8: 15.507,
     9: 16.919}
 
+
 class LinearMotion(object):
     """MOT Tracker using Kalman Filter
        refer to https://github.com/nwojke/deep_sort

@@ -34,6 +34,11 @@ def check_file_exist(filename, msg_tmpl='file "{}" does not exist'):
     if not osp.isfile(filename):
         raise FileNotFoundError(msg_tmpl.format(filename))
 
+def check_folder_exist(foldername, msg_tmpl='folder "{}" does not exist'):
+    """Check the folder path"""
+    if not osp.isdir(foldername):
+        raise FileNotFoundError(msg_tmpl.format(foldername))
+
 
 def mkdir_or_exist(dir_name, mode=0o777):
     """Create the directory recursively"""

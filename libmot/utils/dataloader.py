@@ -28,7 +28,7 @@ class DataLoader(object):
         max_size: int
             max size of queue for prefetch
         color_space: str
-            you can choose which color space to be converted,eg: 'BGR','RGB',HSV','Gray'
+            you can choose which colsor space to be converted,eg: 'BGR','RGB',HSV','Gray'
             default is BGR
         output_size: Tuple(width, height)
             the output image will be resized to the output_size
