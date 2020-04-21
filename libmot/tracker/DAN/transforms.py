@@ -11,8 +11,7 @@ import numpy as np
 import types
 from numpy import random
 from libmot.utils import iou
-from libmot.tools import Timer
-t=Timer()
+
 
 class Compose(object):
     """Composes several augmentations together.
@@ -28,7 +27,7 @@ class Compose(object):
     def __init__(self, transforms):
         self.transforms = transforms
 
-    def __call__(self, img_pre, img_next, boxes_pre=None, boxes_next=None, labels=None):
+    def __call__(self, img_pre, img_next=None, boxes_pre=None, boxes_next=None, labels=None):
         for t in self.transforms:
             img_pre, img_next, boxes_pre, boxes_next, labels = \
                 t(img_pre, img_next, boxes_pre, boxes_next, labels)
@@ -38,10 +37,14 @@ class Compose(object):
 class ConvertFromInts(object):
     """Transfer the uint8 to float32
     """
-    def __call__(self, img_pre, img_next,
+    def __call__(self, img_pre, img_next=None,
                  boxes_pre=None, boxes_next=None, labels=None):
-        return img_pre.astype(np.float32), img_next.astype(np.float32), \
-               boxes_pre, boxes_next, labels
+        if img_next is not None:
+            return img_pre.astype(np.float32), img_next.astype(np.float32), \
+                   boxes_pre, boxes_next, labels
+        else:
+            return img_pre.astype(np.float32), img_next, \
+                   boxes_pre, boxes_next, labels
 
 
 class SubtractMeans(object):
@@ -49,30 +52,32 @@ class SubtractMeans(object):
     def __init__(self, mean):
         self.mean = np.array(mean, dtype=np.float32)
 
-    def __call__(self, img_pre, img_next, boxes_pre=None, boxes_next=None, labels=None):
+    def __call__(self, img_pre, img_next=None, boxes_pre=None, boxes_next=None, labels=None):
 
         img_pre = img_pre.astype(np.float32)
         img_pre -= self.mean
-        img_next = img_next.astype(np.float32)
-        img_next -= self.mean
+        if img_next is not None:
+            img_next = img_next.astype(np.float32)
+            img_next -= self.mean
 
-        return img_pre.astype(np.float32), img_next.astype(np.float32), boxes_pre, boxes_next, labels
+        return img_pre, img_next, boxes_pre, boxes_next, labels
 
 
 class ToPercentCoords(object):
     """Normalize boxes' coordinates to range[0,1]
     """
-    def __call__(self, img_pre, img_next, boxes_pre=None, boxes_next=None, labels=None):
+    def __call__(self, img_pre, img_next=None, boxes_pre=None, boxes_next=None, labels=None):
         height, width, channels = img_pre.shape
         boxes_pre[:, 0] /= width
         boxes_pre[:, 2] /= width
         boxes_pre[:, 1] /= height
         boxes_pre[:, 3] /= height
 
-        boxes_next[:, 0] /= width
-        boxes_next[:, 2] /= width
-        boxes_next[:, 1] /= height
-        boxes_next[:, 3] /= height
+        if boxes_next is not None:
+            boxes_next[:, 0] /= width
+            boxes_next[:, 2] /= width
+            boxes_next[:, 1] /= height
+            boxes_next[:, 3] /= height
 
         return img_pre, img_next, boxes_pre, boxes_next, labels
 
@@ -82,9 +87,10 @@ class Resize(object):
     def __init__(self, size):
         self.size = size
 
-    def __call__(self, img_pre, img_next, boxes_pre=None, boxes_next=None, labels=None):
+    def __call__(self, img_pre, img_next=None, boxes_pre=None, boxes_next=None, labels=None):
         img_pre = cv2.resize(img_pre, (self.size, self.size))
-        img_next = cv2.resize(img_next, (self.size, self.size))
+        if img_next is not None:
+            img_next = cv2.resize(img_next, (self.size, self.size))
 
         return img_pre, img_next, boxes_pre, boxes_next, labels
 
@@ -97,11 +103,12 @@ class RandomSaturation(object):
         assert self.upper >= self.lower, "contrast upper must be >= lower."
         assert self.lower >= 0, "contrast lower must be non-negative."
 
-    def __call__(self, img_pre, img_next, boxes_pre=None, boxes_next=None, labels=None):
+    def __call__(self, img_pre, img_next=None, boxes_pre=None, boxes_next=None, labels=None):
         if random.randint(2):
             alpha = random.uniform(self.lower, self.upper)
             img_pre[:, :, 1] = img_pre[:, :, 1] * alpha
-            img_next[:, :, 1] = img_next[:, :, 1] * alpha
+            if img_next is not None:
+                img_next[:, :, 1] = img_next[:, :, 1] * alpha
 
         return img_pre, img_next, boxes_pre, boxes_next, labels
 
@@ -112,16 +119,16 @@ class RandomHue(object):
         assert delta >= 0.0 and delta <= 360.0
         self.delta = delta
 
-    def __call__(self, img_pre, img_next, boxes_pre=None, boxes_next=None, labels=None):
+    def __call__(self, img_pre, img_next=None, boxes_pre=None, boxes_next=None, labels=None):
         if random.randint(2):
             delta = random.uniform(-self.delta, self.delta)
             img_pre[:, :, 0] = img_pre[:, :, 0] + delta
             img_pre[:, :, 0][img_pre[:, :, 0] > 360.0] -= 360.0
             img_pre[:, :, 0][img_pre[:, :, 0] < 0.0] += 360.0
-
-            img_next[:, :, 0] = img_next[:, :, 0] + delta
-            img_next[:, :, 0][img_next[:, :, 0] > 360.0] -= 360.0
-            img_next[:, :, 0][img_next[:, :, 0] < 0.0] += 360.0
+            if img_next is not None:
+                img_next[:, :, 0] = img_next[:, :, 0] + delta
+                img_next[:, :, 0][img_next[:, :, 0] > 360.0] -= 360.0
+                img_next[:, :, 0][img_next[:, :, 0] < 0.0] += 360.0
         return img_pre, img_next, boxes_pre, boxes_next, labels
 
 
@@ -132,12 +139,13 @@ class RandomLightingNoise(object):
                       (1, 0, 2), (1, 2, 0),
                       (2, 0, 1), (2, 1, 0))
 
-    def __call__(self, img_pre, img_next, boxes_pre=None, boxes_next=None, labels=None):
+    def __call__(self, img_pre, img_next=None, boxes_pre=None, boxes_next=None, labels=None):
         if random.randint(2):
             swap = self.perms[random.randint(len(self.perms))]
             shuffle = SwapChannels(swap)  # shuffle channels
             img_pre = shuffle(img_pre)
-            img_next = shuffle(img_next)
+            if img_next is not None:
+                img_next = shuffle(img_next)
         return img_pre, img_next, boxes_pre, boxes_next, labels
 
 
@@ -147,13 +155,15 @@ class ConvertColor(object):
         self.transform = transform
         self.current = current
 
-    def __call__(self, img_pre, img_next, boxes_pre=None, boxes_next=None, labels=None):
+    def __call__(self, img_pre, img_next=None, boxes_pre=None, boxes_next=None, labels=None):
         if self.current == 'BGR' and self.transform == 'HSV':
             img_pre = cv2.cvtColor(img_pre, cv2.COLOR_BGR2HSV)
-            img_next = cv2.cvtColor(img_next, cv2.COLOR_BGR2HSV)
+            if img_next is not None:
+                img_next = cv2.cvtColor(img_next, cv2.COLOR_BGR2HSV)
         elif self.current == 'HSV' and self.transform == 'BGR':
             img_pre = cv2.cvtColor(img_pre, cv2.COLOR_HSV2BGR)
-            img_next = cv2.cvtColor(img_next, cv2.COLOR_HSV2BGR)
+            if img_next is not None:
+                img_next = cv2.cvtColor(img_next, cv2.COLOR_HSV2BGR)
         else:
             raise NotImplementedError
         return img_pre, img_next, boxes_pre, boxes_next, labels
@@ -168,11 +178,12 @@ class RandomContrast(object):
         assert self.lower >= 0, "contrast lower must be non-negative."
 
     # expects float image
-    def __call__(self, img_pre, img_next, boxes_pre=None, boxes_next=None, labels=None):
+    def __call__(self, img_pre, img_next=None, boxes_pre=None, boxes_next=None, labels=None):
         if random.randint(2):
             alpha = random.uniform(self.lower, self.upper)
             img_pre = img_pre*alpha
-            img_next = img_next*alpha
+            if img_next is not None:
+                img_next = img_next*alpha
         return img_pre, img_next, boxes_pre, boxes_next, labels
 
 
@@ -183,11 +194,12 @@ class RandomBrightness(object):
         assert delta <= 255.0
         self.delta = delta
 
-    def __call__(self, img_pre, img_next, boxes_pre=None, boxes_next=None, labels=None):
+    def __call__(self, img_pre, img_next=None, boxes_pre=None, boxes_next=None, labels=None):
         if random.randint(2):
             delta = random.uniform(-self.delta, self.delta)
             img_pre = img_pre + delta
-            img_next = img_next + delta
+            if img_next is not None:
+                img_next = img_next + delta
         return img_pre, img_next, boxes_pre, boxes_next, labels
 
 
@@ -212,7 +224,6 @@ class RandomSampleCrop(object):
     def crop(self, image, boxes, labels, mode, min_iou, max_iou, w, h, left, top, isPre=True):
         """
             cropped image should contain all of the boxes' centers
-
 
         """
 
@@ -284,7 +295,7 @@ class RandomSampleCrop(object):
         return current_image, current_boxes, current_labels
 
 
-    def __call__(self, img_pre, img_next, boxes_pre=None, boxes_next=None, labels=None):
+    def __call__(self, img_pre, img_next=None, boxes_pre=None, boxes_next=None, labels=None):
         height, width, _ = img_pre.shape
         while True:
             # randomly choose a mode
@@ -314,12 +325,14 @@ class RandomSampleCrop(object):
                 res_pre = self.crop(img_pre, boxes_pre, labels, mode, min_iou, max_iou, w, h, left, top, isPre=True)
                 if res_pre is None:
                     continue
-
-                res_next = self.crop(img_next, boxes_next, res_pre[2], mode, min_iou, max_iou, w, h, left, top, isPre=False)
-                if res_next is None:
-                    continue
+                if img_next is not None:
+                    res_next = self.crop(img_next, boxes_next, res_pre[2], mode, min_iou, max_iou, w, h, left, top, isPre=False)
+                    if res_next is None:
+                        continue
+                    else:
+                        return res_pre[0], res_next[0], res_pre[1], res_next[1], res_next[2]
                 else:
-                    return res_pre[0], res_next[0], res_pre[1], res_next[1], res_next[2]
+                    return res_pre[0], img_next, res_pre[1], boxes_next, labels
 
 
 class Expand(object):
@@ -335,7 +348,7 @@ class Expand(object):
         expand_image[int(top):int(top + height), int(left):int(left + width)] = image
         return expand_image
 
-    def __call__(self, img_pre, img_next, boxes_pre=None, boxes_next=None, labels=None):
+    def __call__(self, img_pre, img_next=None, boxes_pre=None, boxes_next=None, labels=None):
         if random.randint(2):
             return img_pre, img_next, boxes_pre, boxes_next, labels
 
@@ -345,15 +358,15 @@ class Expand(object):
         top = random.uniform(0, height * ratio - height)
 
         img_pre = self.expand(img_pre, height, width, depth, ratio, left, top)
-        img_next = self.expand(img_next, height, width, depth, ratio, left, top)
-
         boxes_pre = boxes_pre.copy()
         boxes_pre[:, :2] += (int(left), int(top))
         boxes_pre[:, 2:] += (int(left), int(top))
 
-        boxes_next = boxes_next.copy()
-        boxes_next[:, :2] += (int(left), int(top))
-        boxes_next[:, 2:] += (int(left), int(top))
+        if img_next is not None:
+            img_next = self.expand(img_next, height, width, depth, ratio, left, top)
+            boxes_next = boxes_next.copy()
+            boxes_next[:, :2] += (int(left), int(top))
+            boxes_next[:, 2:] += (int(left), int(top))
 
         return img_pre, img_next, boxes_pre, boxes_next, labels
 
@@ -367,14 +380,16 @@ class RandomMirror(object):
         boxes[:, 2] = width - boxes[:, 2]
         return image, boxes
 
-    def __call__(self, img_pre, img_next, boxes_pre=None, boxes_next=None, labels=None):
+    def __call__(self, img_pre, img_next=None, boxes_pre=None, boxes_next=None, labels=None):
         if random.randint(2):
             res_pre = self.mirror(img_pre, boxes_pre)
-            res_next = self.mirror(img_next, boxes_next)
-            img_pre= res_pre[0]
-            img_next = res_next[0]
+            img_pre = res_pre[0]
             boxes_pre = res_pre[1]
-            boxes_next = res_next[1]
+
+            if img_next is not None:
+                res_next = self.mirror(img_next, boxes_next)
+                img_next = res_next[0]
+                boxes_next = res_next[1]
 
         return img_pre, img_next, boxes_pre, boxes_next, labels
 
@@ -418,7 +433,7 @@ class PhotometricDistort(object):
         self.rand_brightness = RandomBrightness()
         self.rand_light_noise = RandomLightingNoise()
 
-    def __call__(self, img_pre, img_next, boxes_pre=None, boxes_next=None, labels=None):
+    def __call__(self, img_pre, img_next=None, boxes_pre=None, boxes_next=None, labels=None):
         im_pre = img_pre.copy()
         im_next = img_next.copy()
         im_pre, im_next, boxes_pre, boxes_next, labels = \
@@ -440,7 +455,7 @@ class ResizeShuffleBoxes(object):
     def __init__(self, max_object):
         self.max_object = max_object
 
-    def __call__(self, img_pre, img_next, boxes_pre=None, boxes_next=None, labels=None):
+    def __call__(self, img_pre, img_next=None, boxes_pre=None, boxes_next=None, labels=None):
 
         resize_f = lambda boxes: \
             (boxes.shape[0],
@@ -453,38 +468,39 @@ class ResizeShuffleBoxes(object):
                  ))))
 
         size_pre, boxes_pre = resize_f(boxes_pre)
-        size_next, boxes_next = resize_f(boxes_next)
-
         indexes_pre = np.arange(self.max_object)
-        indexes_next = np.arange(self.max_object)
         np.random.shuffle(indexes_pre)
-        np.random.shuffle(indexes_next)
-
         boxes_pre = boxes_pre[indexes_pre, :]
-        boxes_next = boxes_next[indexes_next, :]
-
-        labels = labels[indexes_pre, :]
-        labels = labels[:, indexes_next]
-
         mask_pre = indexes_pre < size_pre
-        mask_next = indexes_next < size_next
 
-        # add false object label
-        false_object_pre = (labels.sum(1) == 0).astype(float)       # should consider unmatched object
-        false_object_pre[np.logical_not(mask_pre)] = 0.0
+        mask_next = None
 
-        false_object_next = (labels.sum(0) == 0).astype(float)  # should consider unmatched object
-        false_object_next[np.logical_not(mask_next)] = 0.0
+        if img_next is not None:
+            size_next, boxes_next = resize_f(boxes_next)
+            indexes_next = np.arange(self.max_object)
+            np.random.shuffle(indexes_next)
+            boxes_next = boxes_next[indexes_next, :]
+            mask_next = indexes_next < size_next
 
-        false_object_pre = np.expand_dims(false_object_pre, axis=1)
-        labels = np.concatenate((labels, false_object_pre), axis=1) #Nmx(Nm+1)
+            labels = labels[indexes_pre, :]
+            labels = labels[:, indexes_next]
 
-        false_object_next = np.append(false_object_next, [0])
-        false_object_next = np.expand_dims(false_object_next, axis=0)
-        labels = np.concatenate((labels, false_object_next), axis=0)  #(Nm+1)x(Nm+1)
+            # add false object label
+            false_object_pre = (labels.sum(1) == 0).astype(float)       # should consider unmatched object
+            false_object_pre[np.logical_not(mask_pre)] = 0.0
 
-        mask_pre = np.append(mask_pre, [True])  # (Nm+1)
-        mask_next = np.append(mask_next, [True]) # (Nm+1)
+            false_object_next = (labels.sum(0) == 0).astype(float)  # should consider unmatched object
+            false_object_next[np.logical_not(mask_next)] = 0.0
+
+            false_object_pre = np.expand_dims(false_object_pre, axis=1)
+            labels = np.concatenate((labels, false_object_pre), axis=1) #Nmx(Nm+1)
+
+            false_object_next = np.append(false_object_next, [0])
+            false_object_next = np.expand_dims(false_object_next, axis=0)
+            labels = np.concatenate((labels, false_object_next), axis=0)  #(Nm+1)x(Nm+1)
+
+        mask_pre = np.append(mask_pre, [True])
+
 
         return img_pre, img_next, \
                [boxes_pre, mask_pre], \
@@ -499,7 +515,7 @@ class FormatBoxes(object):
     def __init__(self, keep_box=False):
         self.keep_box = keep_box
 
-    def __call__(self,img_pre, img_next, boxes_pre=None, boxes_next=None, labels=None):
+    def __call__(self,img_pre, img_next=None, boxes_pre=None, boxes_next=None, labels=None):
 
         '''
         boxes_pre: [N, 4]
@@ -527,11 +543,12 @@ class FormatBoxes(object):
 
 
         # remove inf
+
         boxes_pre[0] = f(boxes_pre[0])
         boxes_pre[0][boxes_pre[0] == np.inf] = 1.5
-
-        boxes_next[0] = f(boxes_next[0])
-        boxes_next[0][boxes_next[0] == np.inf] = 1.5
+        if img_next is not None:
+            boxes_next[0] = f(boxes_next[0])
+            boxes_next[0][boxes_next[0] == np.inf] = 1.5
 
         return img_pre, img_next, boxes_pre, boxes_next, labels
 
@@ -539,19 +556,19 @@ class FormatBoxes(object):
 class ToTensor(object):
     """Opencv image(HWC) -> Tensor(CHW)
     """
-    def __call__(self,img_pre, img_next, boxes_pre=None, boxes_next=None, labels=None):
+    def __call__(self,img_pre, img_next=None, boxes_pre=None, boxes_next=None, labels=None):
 
         img_pre = torch.from_numpy(img_pre.astype(np.float32)).permute(2, 0, 1)
-        img_next = torch.from_numpy(img_next.astype(np.float32)).permute(2, 0, 1)
-
         boxes_pre[0] = torch.from_numpy(boxes_pre[0].astype(float))
         boxes_pre[1] = torch.from_numpy(boxes_pre[1].astype(np.uint8))
 
-        boxes_next[0] = torch.from_numpy(boxes_next[0].astype(float))
-        boxes_next[1] = torch.from_numpy(boxes_next[1].astype(np.uint8))
+        if img_next is not None:
+            img_next = torch.from_numpy(img_next.astype(np.float32)).permute(2, 0, 1)
+            boxes_next[0] = torch.from_numpy(boxes_next[0].astype(float))
+            boxes_next[1] = torch.from_numpy(boxes_next[1].astype(np.uint8))
 
-        labels = torch.from_numpy(labels).unsqueeze(0)
-        print(img_pre.size())
+            labels = torch.from_numpy(labels).unsqueeze(0)
+
         return img_pre, img_next, boxes_pre, boxes_next, labels
 
 
@@ -586,8 +603,18 @@ class DANAugmentation(object):
                 FormatBoxes(keep_box=True),
                 ToTensor()
             ])
+        else:
+            self.augment = Compose([
+                ConvertFromInts(),
+                ToPercentCoords(),
+                Resize(self.size),
+                SubtractMeans(self.mean),
+                ResizeShuffleBoxes(self.max_object),
+                FormatBoxes(keep_box=True),
+                ToTensor()
+            ])
 
-    def __call__(self, img_pre, img_next, boxes_pre, boxes_next, labels):
+    def __call__(self, img_pre, img_next=None, boxes_pre=None, boxes_next=None, labels=None):
         return self.augment(img_pre, img_next, boxes_pre, boxes_next, labels)
 
 
@@ -601,16 +628,24 @@ def collate_fn(batch):
     indexes_next = []
     for sample in batch:
         img_pre.append(sample[0])
-        img_next.append(sample[1])
-        boxes_pre.append(sample[2][0].float())
-        boxes_next.append(sample[3][0].float())
-        labels.append(sample[4].float())
         indexes_pre.append(sample[2][1].byte())
-        indexes_next.append(sample[3][1].byte())
-    return torch.stack(img_pre, 0), torch.stack(img_next, 0), \
-           torch.stack(boxes_pre, 0), torch.stack(boxes_next, 0), \
-           torch.stack(labels, 0), \
-           torch.stack(indexes_pre, 0).unsqueeze(1), \
-           torch.stack(indexes_next, 0).unsqueeze(1)
+        boxes_pre.append(sample[2][0].float())
+
+        if sample[1] is not None:
+            img_next.append(sample[1])
+            boxes_next.append(sample[3][0].float())
+            indexes_next.append(sample[3][1].byte())
+            labels.append(sample[4].float())
+
+    if len(labels) > 0:
+        return torch.stack(img_pre, 0), torch.stack(img_next, 0), \
+               torch.stack(boxes_pre, 0), torch.stack(boxes_next, 0), \
+               torch.stack(labels, 0), \
+               torch.stack(indexes_pre, 0).unsqueeze(1), \
+               torch.stack(indexes_next, 0).unsqueeze(1)
+    else:
+        return torch.stack(img_pre, 0), torch.stack(boxes_pre, 0),\
+               torch.stack(indexes_pre, 0).unsqueeze(1)
+
 
 

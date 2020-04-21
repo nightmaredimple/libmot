@@ -5,6 +5,7 @@ numpy==1.17.4
 opencv-python==4.1.1.26
 ortools>=7.4.7247
 path.py==12.0.1
+pandas>=0.25.1
 pillow>=6.2.0
 progressbar2==3.50.1
 pyYAML==5.1.2

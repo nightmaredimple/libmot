@@ -12,7 +12,6 @@ class MOTReader(object):
     def __init__(self, mot_folder=None, length=-1, image_folder=None, detection_file=None,
                  gt_file=None, info_file=None, detection_thresh=None, vis_thresh=None):
         """
-
         Parameters
         ----------
         mot_folder: str
@@ -36,14 +35,14 @@ class MOTReader(object):
 
         if mot_folder is not None:
             mot_folder = osp.abspath(osp.expanduser(mot_folder))
-            self.image_directory = osp.join(mot_folder, 'img1')
+            self.image_folder = osp.join(mot_folder, 'img1')
             self.detection_file = osp.join(mot_folder, 'det/det.txt')
             self.gt_file = osp.join(mot_folder, 'gt/gt.txt')
             self.info_file = osp.join(mot_folder, 'seqinfo.ini')
             self._check_dir([mot_folder, self.image_folder])
             self._check_file([self.detection_file, self.gt_file, self.info_file])
         else:
-            self.image_directory = osp.abspath(osp.expanduser(image_folder))
+            self.image_folder = osp.abspath(osp.expanduser(image_folder))
             self.detection_file = detection_file
             self.gt_file = gt_file
             self.info_file = info_file
@@ -53,10 +52,9 @@ class MOTReader(object):
         self.video_info = self.get_video_information(self.info_file)
         self.vis_thresh = vis_thresh
         self.detection_thresh = detection_thresh
-        self.image_format = os.path.join(self.image_directory, '{0:06d}.jpg')
-        if length == -1:
-            self.track_length = self.video_info['length']
-        else:
+        self.image_format = os.path.join(self.image_folder, '{0:06d}.jpg')
+        self.track_length = self.video_info['length']
+        if length > -1:
             self.track_length = length
 
         self.filter_gt(self.gt_file)
@@ -80,14 +78,14 @@ class MOTReader(object):
         """get sequence information from seqinfo.ini"""
         video_info = {}
         if filepath is None or not osp.isfile(filepath):
-            self.image_list = sorted(os.listdir(self.image_directory))
-            img = cv2.imread(os.path.join(self.image_directory, self.image_list[0]))
+            self.image_list = sorted(os.listdir(self.image_folder))
+            img = cv2.imread(os.path.join(self.image_folder, self.image_list[0]))
             video_info.update({'shape': (img.shape[1], img.shape[0])})
             video_info.update({'length': len(self.image_list)})
-            if osp.basename(self.image_directory) == 'img1':
-                video_info.update({'name': osp.basename(osp.dirname(self.image_directory))})
+            if osp.basename(self.image_folder) == 'img1':
+                video_info.update({'name': osp.basename(osp.dirname(self.image_folder))})
             else:
-                video_info.update({'name': osp.basename(self.image_directory)})
+                video_info.update({'name': osp.basename(self.image_folder)})
         else:
             seq_info = configparser.ConfigParser()
             seq_info.read(filepath)
@@ -160,6 +158,9 @@ class MOTReader(object):
 
     def __len__(self):
         return self.track_length
+
+
+
 
 
 
