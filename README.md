@@ -27,8 +27,8 @@ The details can be seen from my [blogs](https://huangpiao.tech/) or [zhihu](http
 |                         |          Epipolar Geometry          |          TNT           |    ✓     |
 | ----------------------- | ----------------------------------- | ---------------------- |   ---    |
 |                         |                Re-ID                |           -            |    ☐     |
-|     **Appearance**      |           Feature Fusion            |           -            |    ☐     |
-|                         |          Feature Selection          |           -            |    ☐     |
+|     **Appearance**      |      Feature Fusion&Selection       |           -            |    ☐     |
+|                         |                 DAN                 |          DAN           |    ✓     |
 | ----------------------- | ----------------------------------- | ---------------------- |   ---    |
 |      **Detection**      |          Faster RCNN + FPN          |       Tracktor++       |    ☐     |
 | ----------------------- | ----------------------------------- | ---------------------- |   ---    |
