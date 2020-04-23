@@ -178,7 +178,7 @@ def train(cfg, train_loader, dan_net, optimizer, iterations, logger, n_iter, epo
         logger.train_displayer.add_scalar('accuracy/accuracy_pre', accuracy_pre.item(), n_iter)
         logger.train_displayer.add_scalar('accuracy/accuracy_next', accuracy_next.item(), n_iter)
 
-        if n_iter % 100 == 0:
+        if n_iter % 1000 == 0:
             matching_images = show_batch_circle_image(img_pre, img_next, boxes_pre, boxes_next,
                                                       mask_pre, mask_next, predict_indexes, cfg)
 
@@ -220,7 +220,7 @@ def valid(cfg, valid_loader, dan_net, logger, epoch):
     logger.screen_displayer.valid_bar.update(0)
     logger.write('Begin Validation...')
     timer.tic()
-
+    choice = np.random.randint(len(valid_loader))
     for i, (img_pre, img_next, boxes_pre, boxes_next, labels, mask_pre, mask_next) in enumerate(valid_loader):
         data_time.update(timer.toc())
         img_pre = img_pre.to(cfg['solver']['device'][0])
@@ -247,7 +247,7 @@ def valid(cfg, valid_loader, dan_net, logger, epoch):
         logger.valid_displayer.add_scalar('accuracy/accuracy_pre', accuracy_pre.item(), epoch)
         logger.valid_displayer.add_scalar('accuracy/accuracy_next', accuracy_next.item(), epoch)
 
-        if i == np.random.randint(len(valid_loader)):
+        if i == choice:
             matching_images = show_batch_circle_image(img_pre, img_next, boxes_pre, boxes_next,
                                                       mask_pre, mask_next, predict_indexes, cfg)
 
