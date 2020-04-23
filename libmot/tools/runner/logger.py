@@ -7,7 +7,7 @@ if platform.system() == 'Windows':
     from blessed import Terminal
 else:
     from blessings import Terminal
-
+import torch
 import sys
 import time
 import logging
@@ -15,6 +15,7 @@ import os.path as osp
 from progressbar import *
 from tensorboardX import SummaryWriter
 from libmot.utils import mkdir_or_exist
+import shutil
 
 
 class TermLogger(object):
@@ -271,6 +272,9 @@ class LogManager(object):
         self.log_file = osp.join(self.log_dir, 'log.txt')
         self.file_logger = get_logger(log_file=self.log_file, log_level=logging.INFO)
 
+        self.checkpoint_dir = osp.join(self.log_dir, 'checkpoints')
+        mkdir_or_exist(self.checkpoint_dir)
+
     def screen_logger(self, n_epochs, train_iters, valid_iters=0, train_bar_size=2, valid_bar_size=2):
         """
         Parameters
@@ -327,3 +331,24 @@ class LogManager(object):
             Write messages to file logger
         """
         self.file_logger.info(msg)
+
+    def save_checkpoint(self, epoch, state_dict, optimizer, lr_schedule, model_name, is_best=False):
+        """
+        Parameters
+        ----------
+        epoch: current epoch
+        state_dict: model weights
+        optimizer: optimizer state_dict()
+        lr_schedule: lr_scheduler.state_dict()
+        model_name: model name, used for naming checkpoint
+        is_best: whether the performance of validation is the best in history
+        """
+        state = {'epoch': epoch,
+                 'state_dict': state_dict,
+                 'optimizer': optimizer,
+                 'lr_schedule': lr_schedule}
+        save_path = osp.join(self.checkpoint_dir, '{}_{}.pth.tar'.format(model_name, epoch))
+        torch.save(state, save_path)
+        if is_best:
+            shutil.copyfile(save_path, osp.join(self.checkpoint_dir, '{}_best.pth.tar'.format(model_name)))
+

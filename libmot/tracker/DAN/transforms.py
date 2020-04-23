@@ -46,6 +46,38 @@ class ConvertFromInts(object):
             return img_pre.astype(np.float32), img_next, \
                    boxes_pre, boxes_next, labels
 
+class MoveBoxes(object):
+    """Randomly move the centers
+    """
+    def __init__(self, offset_low=0.0, offset_high=0.2):
+        self.offset_low = max(offset_low, 0)
+        self.offset_high = max(offset_low, offset_high)
+        self.range = self.offset_high - self.offset_low
+
+    def __call__(self, img_pre, img_next=None,
+                 boxes_pre=None, boxes_next=None, labels=None):
+        def move(img, boxes):
+            height, width, channels = img.shape
+            center = (boxes[:, :2] + boxes[:, 2:]) / 2.0
+            box_width = boxes[:, 2] - boxes[:, 0]
+            box_height = boxes[:, 3] - boxes[:, 1]
+            t_width = (boxes[:, 2] - boxes[:, 0]) *\
+                      (self.range*random.random(boxes.shape[0]) + self.offset_low)
+            t_height = (boxes[:, 3] - boxes[:, 1]) *\
+                       (self.range*random.random(boxes.shape[0]) + self.offset_low)
+            center[:, 0] += t_width * random.choice((-1,1))
+            center[:, 1] += t_height * random.choice((-1,1))
+            boxes[:, 0] = np.clip(center[:, 0] - box_width / 2.0, 0, width - 1)
+            boxes[:, 2] = np.clip(center[:, 0] + box_width / 2.0, 0, width - 1)
+            boxes[:, 1] = np.clip(center[:, 1] - box_height / 2.0, 0, height - 1)
+            boxes[:, 3] = np.clip(center[:, 1] + box_height / 2.0, 0, height - 1)
+
+        move(img_pre, boxes_pre)
+        if boxes_next is not None:
+            move(img_next, boxes_next)
+
+        return img_pre, img_next, boxes_pre, boxes_next, labels
+
 
 class SubtractMeans(object):
     """Image pixes - mean_pixes"""
@@ -498,6 +530,7 @@ class ResizeShuffleBoxes(object):
             false_object_next = np.append(false_object_next, [0])
             false_object_next = np.expand_dims(false_object_next, axis=0)
             labels = np.concatenate((labels, false_object_next), axis=0)  #(Nm+1)x(Nm+1)
+            mask_next = np.append(mask_next, [True])
 
         mask_pre = np.append(mask_pre, [True])
 
@@ -573,16 +606,19 @@ class ToTensor(object):
 
 
 class DANAugmentation(object):
-    def __init__(self, size, mean, type, max_object, max_expand,
-                 lower_contrast, upper_constrast, lower_saturation, upper_saturation):
-        self.mean = mean
-        self.size = size
-        self.max_object = max_object
-        self.max_expand = max_expand
+    def __init__(self, cfg, type='train'):
+        aug = cfg['augmentation']
+        data = cfg['datasets']
+        self.mean = aug['mean_pixel']
+        self.size = data['image_size']
+        self.max_object = data['max_object']
+        self.max_expand = aug['max_expand']
         if type == 'train':
             self.augment = Compose([
                 ConvertFromInts(),
-                PhotometricDistort(lower_contrast, upper_constrast, lower_saturation, upper_saturation),
+                MoveBoxes(aug['lower_offset'], aug['upper_offset']),
+                PhotometricDistort(aug['lower_contrast'], aug['upper_constrast'],
+                                   aug['lower_saturation'], aug['upper_saturation']),
                 Expand(self.mean, self.max_expand),
                 RandomSampleCrop(self.max_object),
                 RandomMirror(),
@@ -593,16 +629,6 @@ class DANAugmentation(object):
                 FormatBoxes(),
                 ToTensor()
             ])
-        elif type == 'val':
-            self.augment = Compose([
-                ConvertFromInts(),
-                ToPercentCoords(),
-                Resize(self.size),
-                SubtractMeans(self.mean),
-                ResizeShuffleBoxes(self.max_object),
-                FormatBoxes(keep_box=True),
-                ToTensor()
-            ])
         else:
             self.augment = Compose([
                 ConvertFromInts(),
@@ -610,7 +636,7 @@ class DANAugmentation(object):
                 Resize(self.size),
                 SubtractMeans(self.mean),
                 ResizeShuffleBoxes(self.max_object),
-                FormatBoxes(keep_box=True),
+                FormatBoxes(),
                 ToTensor()
             ])
 
@@ -624,28 +650,28 @@ def collate_fn(batch):
     boxes_pre = []
     boxes_next = []
     labels = []
-    indexes_pre = []
-    indexes_next = []
+    masks_pre = []
+    masks_next = []
     for sample in batch:
         img_pre.append(sample[0])
-        indexes_pre.append(sample[2][1].byte())
+        masks_pre.append(sample[2][1].bool())
         boxes_pre.append(sample[2][0].float())
 
         if sample[1] is not None:
             img_next.append(sample[1])
             boxes_next.append(sample[3][0].float())
-            indexes_next.append(sample[3][1].byte())
+            masks_next.append(sample[3][1].bool())
             labels.append(sample[4].float())
 
     if len(labels) > 0:
         return torch.stack(img_pre, 0), torch.stack(img_next, 0), \
                torch.stack(boxes_pre, 0), torch.stack(boxes_next, 0), \
                torch.stack(labels, 0), \
-               torch.stack(indexes_pre, 0).unsqueeze(1), \
-               torch.stack(indexes_next, 0).unsqueeze(1)
+               torch.stack(masks_pre, 0).unsqueeze(1), \
+               torch.stack(masks_next, 0).unsqueeze(1)
     else:
         return torch.stack(img_pre, 0), torch.stack(boxes_pre, 0),\
-               torch.stack(indexes_pre, 0).unsqueeze(1)
+               torch.stack(masks_pre, 0).unsqueeze(1)
 
 
 

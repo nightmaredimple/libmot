@@ -1,0 +1,62 @@
+io:
+  mot_root: "data/MOT17"
+  # log files and weights will be saved in log_folder
+  log_folder: "/data/hpp/log/"
+  base_net_path: "models/DAN/vgg16_reducedfc.pth"
+  # pretrained model path
+  resume:
+  # take gt information from "MOT17-XX-DPM"
+  detector: "DPM"
+  # filter out some sequences from training sets as valid sets
+  # use [] or space means using all folders to train
+  valid: ['09','10']
+datasets:
+  image_size: 900
+  false_constant: 10
+  max_object: 80
+  max_gap: 30
+  min_gap: 0
+  min_visibility: 0.3
+  alpha_valid: 0.8
+augmentation:
+  mean_pixel: (104, 117, 123)
+  max_expand: 1.2
+  lower_contrast: 0.7
+  upper_constrast: 1.5
+  lower_saturation: 0.7
+  upper_saturation: 1.5
+  lower_offset: 0
+  upper_offset: 0.1
+solver:
+  device: '0,1'
+  batch_size: 4
+  num_workers: 4
+  max_epoch: 120
+  learning_rate: 0.01
+  learning_rate_steps: (50, 80, 100, 110)
+  momentum: 0.9
+  weight_decay: 0.0005
+  gamma: 0.1
+  epoch_size: 664
+  # save checkpoints every x epochs
+  saving_frequency: 5
+  # valid every x epochs
+  valid_frequency: 5
+model:
+  base_net:
+    "900": [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'C', 512, 512, 512, 'M', 512, 512, 512]
+    "1024": []
+  extra_net:
+    "900": [256, 'S', 512, 128, 'S', 256, 128, 256, 128, 256, 128, 'S', 256, 128, 256]
+    "1024": []
+  "selector_size": (255, 113, 56, 28, 14, 12, 10, 5, 3)
+  "selector_channel": (60, 80, 100, 80, 60, 50, 40, 30, 20)
+  #final_net[0]=2*sum(selector_channel)
+  "final_net":
+    "900": [1040, 512, 256, 128, 64, 1]
+    "1024": []
+  "vgg_selector": [15, 25, -1]
+  # number of boxes per feature map location
+  "default_mbox":
+    "900": [4, 6, 6, 6, 4, 4]
+    "1024": []

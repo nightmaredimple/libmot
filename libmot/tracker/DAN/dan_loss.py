@@ -12,8 +12,7 @@ import torch.nn.functional as F
 class DANLoss(nn.Module):
     def __init__(self, cfg):
         super(DANLoss, self).__init__()
-        self.device = torch.device(cfg['device'])
-        self.max_object = cfg['max_object']
+        self.max_object = cfg['datasets']['max_object']
 
     def forward(self, prediction, labels, mask0, mask1):
         """
@@ -40,12 +39,13 @@ class DANLoss(nn.Module):
         index_pre：
 
         """
-        mask_pre = mask0[:, :, :]
-        mask_next = mask1[:, :, :]
+
+        mask_pre = mask0[:, :, :] # [B,1,N+1]
+        mask_next = mask1[:, :, :] # [B,1,N+1]
         mask0 = mask0.unsqueeze(3).repeat(1, 1, 1, self.max_object+1)  # [B,1,N+1,N+1]
         mask1 = mask1.unsqueeze(2).repeat(1, 1, self.max_object+1, 1)  # [B,1,N+1,N+1]
-        mask0 = mask0.detach().to(device=self.device)
-        mask1 = mask1.detach().to(device=self.device)
+        mask0 = mask0.detach().to(device=mask0.device)
+        mask1 = mask1.detach().to(device=mask1.device)
 
         # get valid mask region
         mask_region = (mask0 * mask1).float()   # the valid position mask [B,1,N+1,N+1]
@@ -56,8 +56,8 @@ class DANLoss(nn.Module):
         mask_region_union = mask_region_pre*mask_region_next
 
         # get A1, A2, max(A1[:N,:N],A2[:N,:N])
-        prediction_pre = F.Softmax(mask_region_pre*prediction, dim=3)  # softmax in each row,A1
-        prediction_next = F.Softmax(mask_region_next*prediction, dim=2)  # softmax in each col,A2
+        prediction_pre = F.softmax(mask_region_pre*prediction, dim=3)  # softmax in each row,A1
+        prediction_next = F.softmax(mask_region_next*prediction, dim=2)  # softmax in each col,A2
         prediction_all = prediction_pre.clone() # max(A1[:N,:N],A2[:N,:N])
         prediction_all[:, :, :self.max_object, :self.max_object] =\
             torch.max(prediction_pre, prediction_next)[:, :, :self.max_object, :self.max_object]
@@ -71,6 +71,7 @@ class DANLoss(nn.Module):
         labels_num_pre = labels_pre.sum().item()
         labels_num_next = labels_next.sum().item()
         labels_num_union = labels_union.sum().item()
+
 
         # Lf=sum(L1*(-log(A1)))/num(L1)
         if labels_num_pre != 0:
@@ -86,9 +87,9 @@ class DANLoss(nn.Module):
 
         # La=sum(L3*(-log(max(A1,A2))))/num(L3)
         if labels_num_pre != 0 and labels_num_next != 0:
-            loss = -(labels_pre * torch.log(prediction_all)).sum() / labels_num_pre
+            loss_assemble = -(labels_pre * torch.log(prediction_all)).sum() / labels_num_pre
         else:
-            loss = -(labels_pre * torch.log(prediction_all)).sum()
+            loss_assemble = -(labels_pre * torch.log(prediction_all)).sum()
 
         # Lc=L4*|A1-A2|
         if labels_num_union != 0:
@@ -99,9 +100,11 @@ class DANLoss(nn.Module):
         # (rowwise_max_of max(A1,A2)[mask] == rowwise_max_of A1[mask])/num(mask)
         _, indexes_ = labels_pre.max(3) # max of each row
         indexes_ = indexes_[:, :, :-1]
+
         _, indexes_pre = prediction_all.max(3)
         indexes_pre = indexes_pre[:, :, :-1]
         mask_pre_num = mask_pre[:, :, :-1].sum().detach().item() # number of valid targets in pre frame
+
         if mask_pre_num > 0:
             accuracy_pre = (indexes_pre[mask_pre[:, :, :-1]] == indexes_[mask_pre[:,:, :-1]]).float().sum() / mask_pre_num
         else:
@@ -118,8 +121,8 @@ class DANLoss(nn.Module):
         else:
             accuracy_next = (indexes_next[mask_next[:, :, :-1]] == indexes_[mask_next[:, :, :-1]]).float().sum() + 1
 
-        return loss_pre, loss_next, loss_similarity, \
-               (loss_pre + loss_next + loss + loss_similarity)/4.0, \
+        return loss_pre, loss_next, loss_similarity, loss_assemble,\
+               (loss_pre + loss_next + loss_assemble + loss_similarity)/4.0, \
                accuracy_pre, accuracy_next, (accuracy_pre + accuracy_next)/2.0, indexes_pre
 
     def get_loss(self, input, target, mask0, mask1):

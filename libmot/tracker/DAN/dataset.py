@@ -192,24 +192,40 @@ class GTSingleParser:
 
 
 class GTParser:
-    def __init__(self, mot_root, detector='FRCNN', phase='train'):
+    def __init__(self, mot_root, detector='FRCNN', valid=None, phase='train'):
         """
         Parameters
         ----------
         mot_root: mot foler, eg: ./MOT17/
         detector: DPM/FRCNN/SDP or ''(this is for MOT15)
-        phase:train or test
+        valid: filter out some sequences, eg: ['10','11']
+        phase:train or valid
         """
         # analsis all the folder in mot_root
         # 1. get all the folders
-        mot_root = os.path.join(mot_root, phase)
-        all_folders = sorted(
-            [os.path.join(mot_root, i) for i in os.listdir(mot_root)
-             if os.path.isdir(os.path.join(mot_root, i))
-             and i.find(detector) != -1]
-        )
+        mot_root = os.path.join(mot_root, 'train')
+        if valid is None:
+            all_folders = sorted(
+                [os.path.join(mot_root, i) for i in os.listdir(mot_root)
+                 if os.path.isdir(os.path.join(mot_root, i))
+                 and i.find(detector) != -1]
+            )
+        else:
+            all_folders = []
+            for seq in os.listdir(mot_root):
+                if os.path.isdir(os.path.join(mot_root, seq)) and detector in seq:
+                    flag = True if phase == 'train' else False
+                    for ex in valid:
+                        if phase == 'train' and ex in seq:
+                            flag &= False
+                        if phase == 'valid' and ex in seq:
+                            flag |= True
+
+                    if flag:
+                        all_folders.append(os.path.join(mot_root, seq))
+
         # 2. create single parser
-        self.parsers = [GTSingleParser(folder) for folder in all_folders]
+        self.parsers = [GTSingleParser(folder) for folder in sorted(all_folders)]
 
         # 3. get some basic information
         self.lens = [len(p) for p in self.parsers]
@@ -247,27 +263,30 @@ class MOTTrainDataset(data.Dataset):
     The class is the dataset for train, which read gt.txt file and rearrange them as the tracks set.
     it can be selected from the specified frame
     '''
-    def __init__(self, mot_root, transform=None, phase='train', detector='FRCNN', max_object=80, max_gap=30):
+    def __init__(self, cfg, transform=None, phase='train'):
         """
         Parameters
         ----------
-        mot_root: eg: ./MOT17
+        cfg: contains at least:
+            mot_root: eg: ./MOT17
+            detector: DPM/FRCNN/SDP,
+            max_object: max number of objects between two frames
+            max_gap: t-> t + random(next_frame_index)+max_gap
+            valid: list, filter out some sequences, eg: ['10','11']
         transform： transform for augmentation
-        phase: train/test
-        detector: DPM/FRCNN/SDP,
-        max_object: max number of objects between two frames
-        max_gap: t-> t + random(next_frame_index)+max_gap
+        phase: train/valid
         """
         # 1. init all the variables
-        self.mot_root = mot_root
+        self.mot_root = cfg['io']['mot_root']
         self.transform = transform
         self.phase = phase
-        self.detector = detector
-        self.max_object = max_object
-        self.max_gap = max_gap
+        self.detector = cfg['io']['detector']
+        self.max_object = cfg['datasets']['max_object']
+        self.max_gap = cfg['datasets']['max_gap']
+        self.valid = cfg['io']['valid']
 
         # 2. init GTParser
-        self.parser = GTParser(self.mot_root, self.detector)
+        self.parser = GTParser(self.mot_root, self.detector, self.valid, self.phase)
 
     def __getitem__(self, item):
         current_image, current_box, next_image, next_box, labels = self.parser[item]
@@ -291,4 +310,5 @@ class MOTTrainDataset(data.Dataset):
 
     def __len__(self):
         return len(self.parser)
+
 

@@ -8,7 +8,7 @@ import torch
 import random
 
 
-def set_random_seed(seed, deterministic=False, benchmark=False):
+def set_random_seed(seed=26, deterministic=False, benchmark=False):
     """Set random seed.
 
     Args:

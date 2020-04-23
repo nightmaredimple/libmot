@@ -29,7 +29,7 @@ for epoch in range(epochs):
 
     timer.tic()
     for i in range(train_iters):
-        time.sleep(0.5*random.random())
+        time.sleep(0.05*random.random())
         losses.update(random.random())
         batch_time.update(timer.since_last())
         logger.train_displayer.add_scalar('avg_loss', losses.avg[0], train_iters*epoch+i+1)
@@ -47,7 +47,7 @@ for epoch in range(epochs):
     timer.tic()
     logger.screen_displayer.valid_bar.update(0)
     for j in range(valid_iters):
-        time.sleep(0.2*random.random())
+        time.sleep(0.02*random.random())
         errors.update([random.random(), random.random(), random.random()])
         batch_time.update(timer.since_last())
         logger.screen_displayer.valid_bar.update(j + 1)

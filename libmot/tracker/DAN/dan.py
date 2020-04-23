@@ -11,12 +11,11 @@ import os
 
 
 class DAN(nn.Module):
-    def __init__(self, phase, base, extras, selector, final_net, cfg):
+    def __init__(self, base, extras, selector, final_net, cfg):
         """DAN Network
 
         Parameters
         ----------
-        phase: state: train/test
         base: vgg16
         extras:extension
         selector: selected features
@@ -24,29 +23,26 @@ class DAN(nn.Module):
         cfg: config dict
         """
         super(DAN, self).__init__()
-        self.phase = phase
 
         # vgg network
         self.vgg = nn.ModuleList(base)
         self.extras = nn.ModuleList(extras)
         self.selector = nn.ModuleList(selector)
 
-        self.stacker2_bn = nn.BatchNorm2d(int(cfg['final_net'][str(cfg['image_size'])][0] / 2))
+        self.stacker2_bn = nn.BatchNorm2d(int(cfg['model']['final_net'][str(cfg['datasets']['image_size'])][0] / 2))
         self.final_dp = nn.Dropout(0.5)
         self.final_net = nn.ModuleList(final_net)
 
-        self.image_size = cfg['image_size']
-        self.max_object = cfg['max_object']
-        self.selector_channel = cfg['selector_channel']
+        self.image_size = cfg['datasets']['image_size']
+        self.max_object = cfg['datasets']['max_object']
+        self.selector_channel = cfg['model']['selector_channel']
 
         self.false_objects_column = None
         self.false_objects_row = None
-        self.false_constant = cfg['false_constant']
-        self.device = torch.device(cfg['device'])
+        self.false_constant = cfg['datasets']['false_constant']
         self.cfg = cfg
 
-    def forward(self, img_pre=None, img_next=None, box_pre=None, box_next=None,
-                mask_pre=None, mask_next=None, cache=None):
+    def forward(self, img_pre=None, img_next=None, box_pre=None, box_next=None, cache=None):
         """
 
         Parameters
@@ -55,8 +51,6 @@ class DAN(nn.Module):
         img_next: the next image,  (1, 3, 900, 900)
         box_pre：the previous box center, (1, 80, 1, 1, 2)
         box_next：the next box center, (1, 80, 1, 1, 2)
-        mask_pre：the previous box mask
-        mask_next：the next box mask
         cache: the previous features
 
         Returns
@@ -68,16 +62,18 @@ class DAN(nn.Module):
             feature_pre = cache
         else:
             feature_pre = self.forward_feature_extracter(img_pre, box_pre)
-        feature_next = self.forward_feature_extracter(img_next, box_next)
+        feature_next = self.forward_feature_extracter(img_next, box_next) # [B,N,C]
 
-        # [B, N, N, C]
+        # [B, C, N, N]
         x = self.forward_stacker2(feature_pre, feature_next)
         x = self.final_dp(x)
-        # [B, N, N, 1]
+
+        # [B, 1, N, N]
         x = self.forward_final(x, self.final_net)
 
         # add false unmatched row and column
         x = self.add_unmatched_dim(x)
+
         return x
 
     def forward_feature_extracter(self, img, box):
@@ -224,8 +220,8 @@ class DAN(nn.Module):
             for source_index in range(len(sources)):
                 label_res.append(
                     F.grid_sample(sources[source_index],     # [B, Ci, H, W]
-                                  labels[:, label_index, :]  # [B, 1, 1, 2]
-                                  ).squeeze(2).squeeze(2)    # [B, Ci]
+                                  labels[:, label_index, :],  # [B, 1, 1, 2]
+                                  align_corners=True).squeeze(2).squeeze(2)    # [B, Ci]
                 )                                            # Fni x [B,Ci]
             res.append(torch.cat(label_res, 1))              # Nm x [B, sum(CixFni)],  eg :C=sum(CixFni)= 520
 
@@ -255,25 +251,13 @@ class DAN(nn.Module):
         """[N,M]->[N+1,M+1] with padding false_constant
         """
         if self.false_objects_column is None:
-            self.false_objects_column = torch.ones(x.shape[0], x.shape[1], x.shape[2], 1, device=self.device) * self.false_constant
+            self.false_objects_column = torch.ones(x.shape[0], x.shape[1], x.shape[2], 1, device=x.device) * self.false_constant
         x = torch.cat([x, self.false_objects_column], 3)
 
         if self.false_objects_row is None:
-            self.false_objects_row = torch.ones(x.shape[0], x.shape[1], 1, x.shape[3], device=self.device) * self.false_constant
+            self.false_objects_row = torch.ones(x.shape[0], x.shape[1], 1, x.shape[3], device=x.device) * self.false_constant
         x = torch.cat([x, self.false_objects_row], 2)
         return x
-
-    def load_weights(self, base_file):
-        other, ext = os.path.splitext(base_file)
-        if ext == '.pkl' or '.pth':
-            print('Loading weights into state dict...')
-            self.load_state_dict(
-                torch.load(base_file,
-                           map_location=lambda storage, loc: storage)
-            )
-            print('Finished')
-        else:
-            print('Sorry only .pth and .pkl files supported.')
 
 
 def build_vgg(cfg, in_channels=3, batch_norm=False):
@@ -400,12 +384,11 @@ def build_selector(vgg, extra_layers, vgg_selector, selector_channels, batch_nor
     return vgg, extra_layers, selector_layers
 
 
-def build_dan(phase, cfg):
+def build_dan(cfg):
     """Build DAN-Net
 
     Parameters
     ----------
-    phase: train or test
     cfg: contains
         size: input image size, eg: 900
         base_net: vgg structure, eg:{
@@ -426,23 +409,18 @@ def build_dan(phase, cfg):
         selector_channels: output channels of each selected layer
 
     """
-    if phase != 'test' and phase != 'train':
-        print('Error: Phase not recognized')
-        return
-
-    size = cfg['image_size']
+    size = cfg['datasets']['image_size']
     if size != 900:
         print('Error: Sorry only SST{} is supported currently!'.format(size))
         return
 
-    base_net = cfg['base_net']
-    extra_net = cfg['extra_net']
-    final_net = cfg['final_net']
-    vgg_selector = cfg['vgg_selector']
-    selector_channels = cfg['selector_channels']
+    base_net = cfg['model']['base_net']
+    extra_net = cfg['model']['extra_net']
+    final_net = cfg['model']['final_net']
+    vgg_selector = cfg['model']['vgg_selector']
+    selector_channels = cfg['model']['selector_channel']
 
-    return DAN(phase,
-               *build_selector(
+    return DAN(*build_selector(
                    build_vgg(base_net[str(size)], 3),
                    add_extras(extra_net[str(size)], 1024),
                    vgg_selector,
