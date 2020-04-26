@@ -130,6 +130,7 @@ class DAN(nn.Module):
         -------
         affinity: [Nmx(Nn+1)]
         """
+
         pre_rest_num = self.max_object - xp.shape[1]
         next_rest_num = self.max_object - xn.shape[1]
         pre_num = xp.shape[1]
@@ -155,6 +156,7 @@ class DAN(nn.Module):
 
         x_f = F.softmax(x, dim=1)
         x_t = F.softmax(x, dim=0)
+
         # slice
         last_row, last_col = x_f.shape
         row_slice = list(range(pre_num)) + [last_row - 1]   # [0,...Nm-1,N-1]
@@ -169,7 +171,7 @@ class DAN(nn.Module):
         # x[:Nm, :Nn] = (xf[:Nm, :Nn] + xt[:Nm, :Nn])/2
         # x[:, Nn] = xf[:, Nn]
         x[0:pre_num, 0:next_num] = (x_f[0:pre_num, 0:next_num] + x_t[0:pre_num, 0:next_num]) / 2.0
-        x[:, -1] = x_f[:, -1]
+        x[:, next_num:next_num+1] = x_f[:pre_num, next_num:next_num+1]
         if fill_up_column and pre_num > 1:
             x = torch.cat([x, x[:, -1].repeat(1, pre_num - 1)], dim=1)  # [Nmx(Nn+Nm)]
 

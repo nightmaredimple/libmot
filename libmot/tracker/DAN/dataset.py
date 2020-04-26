@@ -295,7 +295,6 @@ class MOTTrainDataset(data.Dataset):
         while current_image is None:
             current_image, current_box, next_image, next_box, labels = \
                 self.parser[item+random.randint(-self.max_gap, self.max_gap)]
-            print('None processing.')
 
         if self.transform is None:
             return current_image, current_box, next_image, next_box, labels

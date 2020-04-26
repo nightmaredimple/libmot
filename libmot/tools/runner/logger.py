@@ -15,6 +15,7 @@ import os.path as osp
 from progressbar import *
 from tensorboardX import SummaryWriter
 from libmot.utils import mkdir_or_exist
+from libmot.tools import Config
 import shutil
 
 
@@ -263,9 +264,7 @@ class LogManager(object):
         self.valid_displayer = None
 
         t = time.localtime()
-        dirname = time.strftime("%Y-%m-%d %H:%M:%S",t)
-        if platform.system() == 'Windows':
-            dirname = time.strftime("%Y-%m-%d-%H-%M-%S",t)
+        dirname = time.strftime("%Y%m%d_%H_%M_%S", t)
 
         self.log_dir = osp.join(log_path, dirname)
         mkdir_or_exist(self.log_dir)
@@ -351,4 +350,20 @@ class LogManager(object):
         torch.save(state, save_path)
         if is_best:
             shutil.copyfile(save_path, osp.join(self.checkpoint_dir, '{}_best.pth.tar'.format(model_name)))
+
+    def save_config(self, cfg):
+        """Save current config,
+            cfg must be Config instance or str or file path
+        """
+        if isinstance(cfg, Config):
+            cfg = cfg.text
+
+        if isinstance(cfg, str):
+            if '.yaml' in cfg or '.py' in cfg:
+                shutil.copyfile(cfg, osp.join(self.log_dir, osp.basename(cfg)))
+            else:
+                with open(osp.join(self.log_dir, 'config.txt'), 'w') as f:
+                    f.write(cfg.text)
+
+
 

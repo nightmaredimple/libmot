@@ -19,6 +19,7 @@ src_index = 502               # src image index
 dst_index = 505               # dst image index
 dir_path = 'E:\\datasets\\MOT17\\train\\MOT17-13-SDP\\'
 
+
 # prefetch
 src = cv2.imread(dir_path + 'img1\\00%04d.jpg' % src_index)
 dst = cv2.imread(dir_path + 'img1\\00%04d.jpg' % dst_index)

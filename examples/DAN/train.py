@@ -45,7 +45,8 @@ def main(cfg):
                               batch_size=cfg['solver']['batch_size'],
                               num_workers=cfg['solver']['num_workers'],
                               shuffle=True,
-                              collate_fn=collate_fn)
+                              collate_fn=collate_fn,
+                              pin_memory=True)
     print('{} samples found in train sets'.format(len(train_set)))
 
     if is_valid:
@@ -58,13 +59,14 @@ def main(cfg):
         val_loader = DataLoader(val_set,
                                 batch_size=cfg['solver']['batch_size'],
                                 num_workers=cfg['solver']['num_workers'],
-                                shuffle=False,
-                                collate_fn=collate_fn)
+                                shuffle=True,
+                                collate_fn=collate_fn,
+                                pin_memory=True)
 
     batch_size = cfg['solver']['batch_size']
     epoch_size = cfg['solver']['epoch_size']
     max_epoch = cfg['solver']['max_epoch']
-    # iterations = min(len(train_loader), epoch_size)
+    #iterations = min(len(train_loader), epoch_size)
     iterations = len(train_loader)
 
     # Create Model
@@ -81,7 +83,7 @@ def main(cfg):
     start_epoch = 0
     if cfg['io']['resume'] is not None and len(cfg['io']['resume']) > 0:
         checkpoint = torch.load(cfg['io']['resume'])
-        dan_net.load_state_dict(checkpoint['model'])
+        dan_net.load_state_dict(checkpoint['state_dict'])
         start_epoch = checkpoint(['epoch']) + 1
         optimizer.load_state_dict(checkpoint['optimizer'])
         lr_schedule.load_state_dict(checkpoint['lr_schedule'])
@@ -95,27 +97,31 @@ def main(cfg):
     if cfg['solver']['device'][0].type != 'cpu':
         dan_net = nn.DataParallel(dan_net, cfg['solver']['device'])
         # warmup
-        print('Warmup GPUs...')
+        print('=> Warmup GPUs...')
         for d in cfg['solver']['device']:
             tmp = torch.rand(cfg['solver']['batch_size'], 3, cfg['datasets']['image_size'],
                              cfg['datasets']['image_size'], device=d)
 
     # Set logger for log.txt/screen display/tensorboard/checkpoint
     logger = LogManager(log_path=cfg['io']['log_folder'])
+    logger.save_config(cfg)
     logger.web_logger(is_valid=is_valid)
     if is_valid:
         logger.screen_logger(n_epochs=cfg['solver']['max_epoch'],
                              train_iters=iterations,
-                             valid_iters=len(val_loader))
+                             valid_iters=len(val_loader),
+                             train_bar_size=2,
+                             valid_bar_size=2)
     else:
         logger.screen_logger(n_epochs=cfg['solver']['max_epoch'],
-                             train_iters=iterations)
+                             train_iters=iterations,
+                             train_bar_size=3)
     for i in range(start_epoch):
         logger.screen_displayer.epoch_bar.update(i)
 
     # Begin training
     n_iters = 0
-    best_error = np.inf
+    best_accuracy = -np.inf
     for epoch in range(start_epoch, max_epoch):
         logger.screen_displayer.epoch_bar.update(epoch)
         logger.screen_displayer.reset_train_bar()
@@ -126,13 +132,13 @@ def main(cfg):
         lr_schedule.step(epoch)
 
         is_best = False
-        if is_valid and epoch % cfg['solver']['valid_frequency']:
+        if is_valid and epoch % cfg['solver']['valid_frequency'] == 0:
             logger.screen_displayer.reset_valid_bar()
-            error = valid(cfg, val_loader, dan_net, logger, epoch)
-            is_best = error < best_error
-            best_error = min(best_error, error)
+            accuracy = valid(cfg, val_loader, dan_net, logger, epoch)
+            is_best = accuracy > best_accuracy
+            best_accuracy = max(best_accuracy, accuracy)
 
-        if epoch % cfg['solver']['saving_frequency']:
+        if epoch % cfg['solver']['saving_frequency'] == 0:
             logger.save_checkpoint(epoch, dan_net.module.state_dict(), optimizer, lr_schedule, 'dan', is_best)
 
     logger.stop()
@@ -141,7 +147,7 @@ def main(cfg):
 def train(cfg, train_loader, dan_net, optimizer, iterations, logger, n_iter, epoch, lr):
     batch_time = AverageMeter()
     data_time = AverageMeter()
-    losses = AverageMeter(precision=4)
+    losses = AverageMeter(n=8, precision=4)
     dan_net.train()
     criterion = DANLoss(cfg)
 
@@ -149,7 +155,6 @@ def train(cfg, train_loader, dan_net, optimizer, iterations, logger, n_iter, epo
     logger.screen_displayer.train_bar.update(0)
     timer.tic()
     for i, (img_pre, img_next, boxes_pre, boxes_next, labels, mask_pre, mask_next) in enumerate(train_loader):
-        data_time.update(timer.since_last())
 
         img_pre = img_pre.to(cfg['solver']['device'][0])
         img_next = img_next.to(cfg['solver']['device'][0])
@@ -160,41 +165,42 @@ def train(cfg, train_loader, dan_net, optimizer, iterations, logger, n_iter, epo
         mask_pre = mask_pre.to(cfg['solver']['device'][0])
         mask_next = mask_next.to(cfg['solver']['device'][0])
 
+        data_time.update(timer.since_last())
+
         res = dan_net(img_pre, img_next, boxes_pre, boxes_next)
         optimizer.zero_grad()
         loss_pre, loss_next, loss_similarity, loss_assemble, loss, accuracy_pre, accuracy_next, \
             accuracy, predict_indexes = criterion(res, labels, mask_pre, mask_next)
-        losses.update(loss.item())
+        losses.update([loss.item(), loss_pre.item(), loss_next.item(), loss_similarity.item(),
+                       loss_assemble.item(), accuracy.item(), accuracy_pre.item(), accuracy_next.item()])
         loss.backward()
         optimizer.step()
 
-        logger.train_displayer.add_scalar('loss/total_loss', loss.item(), n_iter)
-        logger.train_displayer.add_scalar('loss/loss_pre', loss_pre.item(), n_iter)
-        logger.train_displayer.add_scalar('loss/loss_next', loss_next.item(), n_iter)
-        logger.train_displayer.add_scalar('loss/loss_similarity', loss_similarity.item(), n_iter)
-        logger.train_displayer.add_scalar('loss/loss_assemble', loss_assemble.item(), n_iter)
+        logger.train_displayer.add_scalar('loss/total_loss', losses.val[0], n_iter)
+        logger.train_displayer.add_scalar('loss/loss_pre', losses.val[1], n_iter)
+        logger.train_displayer.add_scalar('loss/loss_next', losses.val[2], n_iter)
+        logger.train_displayer.add_scalar('loss/loss_similarity', losses.val[3], n_iter)
+        logger.train_displayer.add_scalar('loss/loss_assemble', losses.val[4], n_iter)
 
-        logger.train_displayer.add_scalar('accuracy/accuracy', accuracy.item(), n_iter)
-        logger.train_displayer.add_scalar('accuracy/accuracy_pre', accuracy_pre.item(), n_iter)
-        logger.train_displayer.add_scalar('accuracy/accuracy_next', accuracy_next.item(), n_iter)
+        logger.train_displayer.add_scalar('accuracy/accuracy', losses.val[5], n_iter)
+        logger.train_displayer.add_scalar('accuracy/accuracy_pre', losses.val[6], n_iter)
+        logger.train_displayer.add_scalar('accuracy/accuracy_next', losses.val[7], n_iter)
 
         if n_iter % 1000 == 0:
             matching_images = show_batch_circle_image(img_pre, img_next, boxes_pre, boxes_next,
                                                       mask_pre, mask_next, predict_indexes, cfg)
 
             logger.train_displayer.add_image('train/match_images', torchvision.utils.make_grid(
-                matching_images, nrow=2, normalize=True, scale_each=True), n_iter)
+                matching_images, nrow=4, normalize=True, scale_each=True), n_iter)
 
-        log_string = 'Epoch{} {}/{}: Loss {} loss_pre {:.4f} loss_next {:.4f} loss_similarity {:.4f} ' \
-                     'loss_assemble {:.4f} lr {}'.format(epoch, i+1, iterations, losses, loss_pre.item(),
-                                                         loss_next.item(), loss_similarity.item(),
-                                                         loss_assemble.item(), lr)
+        log_string = 'Epoch{} {}/{}: Avg Loss {} loss_pre {:.4f} loss_next {:.4f} loss_similarity {:.4f} ' \
+                     'loss_assemble {:.4f} accuracy {:.4f} lr {:.6f}'.format(epoch, i+1, iterations,
+                                                                             *losses.avg[:-2], lr)
 
-        display_string = 'Train: Batch time:{} || Data time:{} || Loss:{} || Lf:{:.4f} || Lb:{:.4f} || ' \
-                         'Lc:{:.4f} || La:{:.4f} || lr:{}'.format(
-                                                                batch_time, data_time, losses, loss_pre.item(),
-                                                                loss_next.item(), loss_similarity.item(),
-                                                                loss_assemble.item(), lr)
+        display_string = 'Train: Batch time:{} || Data time:{} || Avg Loss:{:.4f} || Lf:{:.4f} || Lb:{:.4f} || ' \
+                         'Lc:{:.4f} || La:{:.4f} || Avg Accuracy {:.4f} || lr:{:.6f}'.format(
+                                                                batch_time, data_time, losses.avg[0],
+                                                                *losses.val[1:-3], losses.avg[5], lr)
 
         logger.write(log_string)
         logger.screen_displayer.train_bar.update(i + 1)
@@ -209,10 +215,11 @@ def train(cfg, train_loader, dan_net, optimizer, iterations, logger, n_iter, epo
     return losses.avg[0]
 
 
+@torch.no_grad()
 def valid(cfg, valid_loader, dan_net, logger, epoch):
     batch_time = AverageMeter()
     data_time = AverageMeter()
-    losses = AverageMeter(precision=4)
+    losses = AverageMeter(n=8, precision=4)
     dan_net.eval()
     criterion = DANLoss(cfg)
 
@@ -222,7 +229,7 @@ def valid(cfg, valid_loader, dan_net, logger, epoch):
     timer.tic()
     choice = np.random.randint(len(valid_loader))
     for i, (img_pre, img_next, boxes_pre, boxes_next, labels, mask_pre, mask_next) in enumerate(valid_loader):
-        data_time.update(timer.toc())
+
         img_pre = img_pre.to(cfg['solver']['device'][0])
         img_next = img_next.to(cfg['solver']['device'][0])
         boxes_pre = boxes_pre.to(cfg['solver']['device'][0])
@@ -231,45 +238,46 @@ def valid(cfg, valid_loader, dan_net, logger, epoch):
         mask_pre = mask_pre.to(cfg['solver']['device'][0])
         mask_next = mask_next.to(cfg['solver']['device'][0])
 
-        with torch.no_grad():
-            res = dan_net(img_pre, img_next, boxes_pre, boxes_next)
-            loss_pre, loss_next, loss_similarity, loss_assemble, loss, accuracy_pre, accuracy_next, \
-                accuracy, predict_indexes = criterion(res, labels, mask_pre, mask_next)
-        losses.update(loss.item())
+        data_time.update(timer.since_last())
 
-        logger.valid_displayer.add_scalar('loss/total_loss', loss.item(), epoch)
-        logger.valid_displayer.add_scalar('loss/loss_pre', loss_pre.item(), epoch)
-        logger.valid_displayer.add_scalar('loss/loss_next', loss_next.item(), epoch)
-        logger.valid_displayer.add_scalar('loss/loss_similarity', loss_similarity.item(), epoch)
-        logger.valid_displayer.add_scalar('loss/loss_assemble', loss_assemble.item(), epoch)
+        res = dan_net(img_pre, img_next, boxes_pre, boxes_next)
+        loss_pre, loss_next, loss_similarity, loss_assemble, loss, accuracy_pre, accuracy_next, \
+            accuracy, predict_indexes = criterion(res, labels, mask_pre, mask_next)
 
-        logger.valid_displayer.add_scalar('accuracy/accuracy', accuracy.item(), epoch)
-        logger.valid_displayer.add_scalar('accuracy/accuracy_pre', accuracy_pre.item(), epoch)
-        logger.valid_displayer.add_scalar('accuracy/accuracy_next', accuracy_next.item(), epoch)
+        losses.update([loss.item(), loss_pre.item(), loss_next.item(), loss_similarity.item(),
+                       loss_assemble.item(), accuracy.item(), accuracy_pre.item(), accuracy_next.item()])
 
         if i == choice:
             matching_images = show_batch_circle_image(img_pre, img_next, boxes_pre, boxes_next,
                                                       mask_pre, mask_next, predict_indexes, cfg)
 
             logger.valid_displayer.add_image('valid/match_images', torchvision.utils.make_grid(
-                matching_images, nrow=2, normalize=True, scale_each=True), epoch)
+                matching_images, nrow=4, normalize=True, scale_each=True), epoch)
 
-        display_string = 'Valid: Batch time:{} || Data time:{} || Loss:{} || Lf:{:.4f} || Lb:{:.4f}' \
-                         ' || Lc:{:.4f} || La:{:.4f}'.format(
-                                                        batch_time, data_time, losses, loss_pre.item(), loss_next.item(),
-                                                        loss_similarity.item(), loss_assemble.item())
+        display_string = 'Valid: Batch time:{} || Data time:{} || Avg Loss:{:.4f} || Avg Accuracy:{:.4f}' \
+                         ' || Af:{:.4f} || Ab:{:.4f}'.format(batch_time, data_time, losses.avg[0],
+                                                             losses.avg[5], *losses.val[6:])
 
         logger.screen_displayer.valid_bar.update(i + 1)
         logger.screen_displayer.valid_writer.write(display_string)
 
-        batch_time.update(timer.toc())
-        timer.tic()
+        batch_time.update(timer.since_last())
 
-    log_string = 'Epoch{} : Loss {} loss_pre {:.4f} loss_next {:.4f} loss_similarity {:.4f} loss_assemble {:.4f}'.format(
-        epoch, losses, loss_pre.item(), loss_next.item(), loss_similarity.item(), loss_assemble.item())
+    logger.valid_displayer.add_scalar('loss/total_loss', losses.avg[0], epoch)
+    logger.valid_displayer.add_scalar('loss/loss_pre', losses.avg[1], epoch)
+    logger.valid_displayer.add_scalar('loss/loss_next', losses.avg[2], epoch)
+    logger.valid_displayer.add_scalar('loss/loss_similarity', losses.avg[3], epoch)
+    logger.valid_displayer.add_scalar('loss/loss_assemble', losses.avg[4], epoch)
+
+    logger.valid_displayer.add_scalar('accuracy/accuracy', losses.avg[5], epoch)
+    logger.valid_displayer.add_scalar('accuracy/accuracy_pre', losses.avg[6], epoch)
+    logger.valid_displayer.add_scalar('accuracy/accuracy_next', losses.avg[7], epoch)
+
+    log_string = 'Epoch{} : Loss {} loss_pre {:.4f} loss_next {:.4f} loss_similarity {:.4f} loss_assemble {:.4f} ' \
+                 'accuracy:{:.4f}'.format(epoch, *losses.avg[:-2])
     logger.write(log_string)
 
-    return losses.avg[0]
+    return losses.avg[5] - 0.01*losses.avg[0]
 
 
 def image2list(tensors, cfg):

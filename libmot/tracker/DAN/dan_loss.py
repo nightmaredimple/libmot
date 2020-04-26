@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-
+eps = 1e-5
 class DANLoss(nn.Module):
     def __init__(self, cfg):
         super(DANLoss, self).__init__()
@@ -56,7 +56,7 @@ class DANLoss(nn.Module):
         mask_region_union = mask_region_pre*mask_region_next
 
         # get A1, A2, max(A1[:N,:N],A2[:N,:N])
-        prediction_pre = F.softmax(mask_region_pre*prediction, dim=3)  # softmax in each row,A1
+        prediction_pre = F.softmax(mask_region_pre*prediction, dim=3)   # softmax in each row,A1
         prediction_next = F.softmax(mask_region_next*prediction, dim=2)  # softmax in each col,A2
         prediction_all = prediction_pre.clone() # max(A1[:N,:N],A2[:N,:N])
         prediction_all[:, :, :self.max_object, :self.max_object] =\
@@ -75,21 +75,21 @@ class DANLoss(nn.Module):
 
         # Lf=sum(L1*(-log(A1)))/num(L1)
         if labels_num_pre != 0:
-            loss_pre = - (labels_pre * torch.log(prediction_pre)).sum() / labels_num_pre
+            loss_pre = - (labels_pre * torch.log(prediction_pre + eps)).sum() / labels_num_pre
         else:
-            loss_pre = - (labels_pre * torch.log(prediction_pre)).sum()
+            loss_pre = - (labels_pre * torch.log(prediction_pre + eps)).sum()
 
         # Lb=sum(L2*(-log(A2)))/num(L2)
         if labels_num_next != 0:
-            loss_next = - (labels_next * torch.log(prediction_next)).sum() / labels_num_next
+            loss_next = - (labels_next * torch.log(prediction_next + eps)).sum() / labels_num_next
         else:
-            loss_next = - (labels_next * torch.log(prediction_next)).sum()
+            loss_next = - (labels_next * torch.log(prediction_next + eps)).sum()
 
         # La=sum(L3*(-log(max(A1,A2))))/num(L3)
         if labels_num_pre != 0 and labels_num_next != 0:
-            loss_assemble = -(labels_pre * torch.log(prediction_all)).sum() / labels_num_pre
+            loss_assemble = -(labels_pre * torch.log(prediction_all + eps)).sum() / labels_num_pre
         else:
-            loss_assemble = -(labels_pre * torch.log(prediction_all)).sum()
+            loss_assemble = -(labels_pre * torch.log(prediction_all + eps)).sum()
 
         # Lc=L4*|A1-A2|
         if labels_num_union != 0:

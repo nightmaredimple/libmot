@@ -38,8 +38,8 @@ class Timer(object):
     def tic(self):
         """Start the timer."""
         if not self._is_running:
-            self._t_start = time.time()
             self._is_running = True
+        self._t_start = time.time()
         self._t_last = time.time()
 
     def toc(self):

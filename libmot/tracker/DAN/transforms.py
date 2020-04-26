@@ -542,46 +542,34 @@ class ResizeShuffleBoxes(object):
 
 
 class FormatBoxes(object):
-    '''
+    ''' center -> [-1,1]
     note: format the label in order to input into the selector net.
     '''
-    def __init__(self, keep_box=False):
-        self.keep_box = keep_box
-
     def __call__(self,img_pre, img_next=None, boxes_pre=None, boxes_next=None, labels=None):
 
         '''
         boxes_pre: [N, 4]
         '''
-        if not self.keep_box:
-            # convert the center to [-1, 1]
-            # (x1,y1) + (x2, y2) - 1=2xcenter ->[-1,1]
-            # Nx1x1x2
-            f = lambda boxes: np.expand_dims(
-                np.expand_dims(
-                    (boxes[:, :2] + boxes[:, 2:]) - 1,
-                    axis=1
-                ),
+        # convert the center to [-1, 1]
+        # (x1,y1) + (x2, y2) - 1=2xcenter ->[-1,1]
+        # Nx1x1x2
+        f = lambda boxes: np.expand_dims(
+            np.expand_dims(
+                (boxes[:, :2] + boxes[:, 2:]) - 1,
                 axis=1
-            )
-        else:
-            # Nx1x1x6
-            f = lambda boxes: np.expand_dims(
-                np.expand_dims(
-                    np.concatenate([(boxes[:, :2] + boxes[:, 2:]) - 1, boxes[:, 2:6]], axis=1),
-                    axis=1
-                ),
-                axis=1
-            )
-
+            ),
+            axis=1
+        )
 
         # remove inf
 
-        boxes_pre[0] = f(boxes_pre[0])
-        boxes_pre[0][boxes_pre[0] == np.inf] = 1.5
         if img_next is not None:
+            boxes_pre[0] = f(boxes_pre[0])
+            boxes_pre[0][boxes_pre[0] == np.inf] = 1.5
             boxes_next[0] = f(boxes_next[0])
             boxes_next[0][boxes_next[0] == np.inf] = 1.5
+        else:
+            boxes_pre = f(boxes_pre)
 
         return img_pre, img_next, boxes_pre, boxes_next, labels
 
@@ -592,15 +580,17 @@ class ToTensor(object):
     def __call__(self,img_pre, img_next=None, boxes_pre=None, boxes_next=None, labels=None):
 
         img_pre = torch.from_numpy(img_pre.astype(np.float32)).permute(2, 0, 1)
-        boxes_pre[0] = torch.from_numpy(boxes_pre[0].astype(float))
-        boxes_pre[1] = torch.from_numpy(boxes_pre[1].astype(np.uint8))
 
         if img_next is not None:
+            boxes_pre[0] = torch.from_numpy(boxes_pre[0].astype(np.float32))
+            boxes_pre[1] = torch.from_numpy(boxes_pre[1].astype(np.uint8))
             img_next = torch.from_numpy(img_next.astype(np.float32)).permute(2, 0, 1)
-            boxes_next[0] = torch.from_numpy(boxes_next[0].astype(float))
+            boxes_next[0] = torch.from_numpy(boxes_next[0].astype(np.float32))
             boxes_next[1] = torch.from_numpy(boxes_next[1].astype(np.uint8))
 
             labels = torch.from_numpy(labels).unsqueeze(0)
+        else:
+            boxes_pre = torch.from_numpy(boxes_pre.astype(np.float32))
 
         return img_pre, img_next, boxes_pre, boxes_next, labels
 
@@ -629,13 +619,22 @@ class DANAugmentation(object):
                 FormatBoxes(),
                 ToTensor()
             ])
-        else:
+        elif type == 'val':
             self.augment = Compose([
                 ConvertFromInts(),
                 ToPercentCoords(),
                 Resize(self.size),
                 SubtractMeans(self.mean),
                 ResizeShuffleBoxes(self.max_object),
+                FormatBoxes(),
+                ToTensor()
+            ])
+        else:
+            self.augment = Compose([
+                ConvertFromInts(),
+                ToPercentCoords(),
+                Resize(self.size),
+                SubtractMeans(self.mean),
                 FormatBoxes(),
                 ToTensor()
             ])

@@ -37,11 +37,11 @@ solver:
   momentum: 0.9
   weight_decay: 0.0005
   gamma: 0.1
-  epoch_size: 664
+  epoch_size: 1035
   # save checkpoints every x epochs
   saving_frequency: 5
   # valid every x epochs
-  valid_frequency: 5
+  valid_frequency: 1
 model:
   base_net:
     "900": [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'C', 512, 512, 512, 'M', 512, 512, 512]
