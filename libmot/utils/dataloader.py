@@ -81,7 +81,6 @@ class DataLoader(object):
             self.image_list = [name for name in self.image_list if name.split('.')[-1] in self.image_type]
         else:
             raise ValueError("illegal image list")
-
         self.norm = norm
         self.norm_method = norm_method
 
@@ -137,7 +136,7 @@ class DataLoader(object):
                     time.sleep(0.05)
                     continue
             time0 = time.time()
-            img = cv2.imread(self.image_path + '/' + self.image_list[self.index])
+            img = cv2.imread(os.path.join(self.image_path, self.image_list[self.index]))
 
             # convert to other color space
             if self.color_space == 'RGB':
@@ -192,7 +191,8 @@ class DataLoader(object):
                 img_output = method(data)
                 data.update({key: deepcopy(img_output)})
 
-            q_data = {'name': self.image_list[self.index]}
+            q_data = {'name': self.image_list[self.index],
+                      'index': self.index}
             for v in self.save_list:
                 if 'raw' in v:
                     q_data.update({v: img})
@@ -208,13 +208,7 @@ class DataLoader(object):
                     q_data.update({v: data[v]})
 
             # queue
-            #print(time.time()-time0)
             self.queue.put(q_data)
-
-
-
-
-
             self.index += 1
 
     def getData(self):
@@ -235,9 +229,10 @@ class DataLoader(object):
         if self.thread_read:
             self.thread_read.join()
 
+
 if __name__ == '__main__':
     import torch
-    method = {'CUDATensor':lambda x: (torch.from_numpy(x['norm'])).cuda()}
+    method = {'CUDATensor': lambda x: (torch.from_numpy(x['norm'])).cuda()}
     loader = DataLoader('images/MOT17-10-img', max_size=20, norm=True, \
                         color_space='RGB', save_list = ['raw','output'],**method)
     cost = 0

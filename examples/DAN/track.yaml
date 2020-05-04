@@ -1,0 +1,35 @@
+_base_: "./config.yaml"
+io:
+  resume: "/data/hpp/log/20200427_12_17_52/checkpoints/dan_best.pth.tar"
+solver:
+  device: '0'
+datasets:
+  min_visibility: 0
+  detection_thresh: -2
+track:
+  # max length of historical features and other information, >max_track_node
+  max_record_frame: 12
+  # max lost frames in trajectory, if tracked, the age will be reset
+  max_track_age: 12
+  # use each track's latest (max_track_node-1) historical frames and current frame  to compute affinity
+  max_track_node: 30
+  # draw the latest tracking nodes of each trajectory
+  max_draw_track_node: 30
+  # frames within this gaps will be applied iou mask to similarity
+  min_iou_frame_gap: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  # min iou towards to different frame gaps
+  min_iou: [0.3, 0.1, 0.0, -1.0, -2.0, -3.0, -4.0, -5.0, -6.0, -7.0]
+  # min overlapped frames between two trajectories for judging whether to merge two trajectories
+  min_merge_threshold: 0.9
+  # missed frames rate in trajectories, if the rate larger than max_bad_rate, this won't be delete
+  max_bad_node: 0.9
+  # decay ratio of historical feature, sim(i-n,i)=sim(i-n,i)*decay^n
+  decay: 1.0
+  # max iterations for verification
+  roi_verify_max_iterations: 6
+  # punish rate of iou which is lower than min_iou
+  roi_verify_punish_rates: 0.6
+
+
+
+

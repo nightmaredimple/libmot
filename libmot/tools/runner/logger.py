@@ -249,11 +249,13 @@ def print_log(msg, logger=None, level=logging.INFO):
 class LogManager(object):
     def __init__(self, log_path='log'):
         """
-
         Parameters
         ----------
         log_path: str
             it must be a dirname
+        strict: bool
+            if True, then the log path is log dir
+            else: log dir = log path/current time
         """
 
         self.n_iter = 0
@@ -359,11 +361,11 @@ class LogManager(object):
             cfg = cfg.text
 
         if isinstance(cfg, str):
-            if '.yaml' in cfg or '.py' in cfg:
+            if '.yaml' == cfg[-5:] or '.py' == cfg[-3:]:
                 shutil.copyfile(cfg, osp.join(self.log_dir, osp.basename(cfg)))
             else:
                 with open(osp.join(self.log_dir, 'config.txt'), 'w') as f:
-                    f.write(cfg.text)
+                    f.write(cfg)
 
 
 

@@ -25,7 +25,7 @@ def weight_init(module):
 def main(cfg):
     # Set GPU/CPU Environment
     print('=> Setting GPU/CPU Environment...')
-    set_random_seed(26, deterministic=True, benchmark=True)
+    set_random_seed(26, deterministic=True, benchmark=False)
     devices = cfg.solver.device.split(',')
     cfg['solver']['device'] = []
     for device in devices:
@@ -84,7 +84,7 @@ def main(cfg):
     if cfg['io']['resume'] is not None and len(cfg['io']['resume']) > 0:
         checkpoint = torch.load(cfg['io']['resume'])
         dan_net.load_state_dict(checkpoint['state_dict'])
-        start_epoch = checkpoint(['epoch']) + 1
+        start_epoch = checkpoint['epoch'] + 1
         optimizer.load_state_dict(checkpoint['optimizer'])
         lr_schedule.load_state_dict(checkpoint['lr_schedule'])
     else:
@@ -116,7 +116,7 @@ def main(cfg):
         logger.screen_logger(n_epochs=cfg['solver']['max_epoch'],
                              train_iters=iterations,
                              train_bar_size=3)
-    for i in range(start_epoch):
+    for i in range(start_epoch-1):
         logger.screen_displayer.epoch_bar.update(i)
 
     # Begin training
@@ -139,7 +139,9 @@ def main(cfg):
             best_accuracy = max(best_accuracy, accuracy)
 
         if epoch % cfg['solver']['saving_frequency'] == 0:
-            logger.save_checkpoint(epoch, dan_net.module.state_dict(), optimizer, lr_schedule, 'dan', is_best)
+            logger.save_checkpoint(epoch, dan_net.module.state_dict(),
+                                   optimizer.state_dict(), lr_schedule.state_dict(),
+                                   'dan', is_best)
 
     logger.stop()
 

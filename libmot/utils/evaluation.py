@@ -24,7 +24,7 @@ def evaluation_mot(groundtruths, tracks):
     gts = gts.set_index(['FrameId', 'Id'])
     gts[['X', 'Y']] -= (1, 1)
 
-    box = pd.DataFrame(np.array(tracks), columns=['FrameId', 'Id', 'X', 'Y', 'Width', 'Height'])
+    box = pd.DataFrame(np.array(tracks[:, :6]), columns=['FrameId', 'Id', 'X', 'Y', 'Width', 'Height'])
     box = box.set_index(['FrameId', 'Id'])
     box[['X', 'Y']] -= (1, 1)
 

@@ -41,10 +41,10 @@ class ConvertFromInts(object):
                  boxes_pre=None, boxes_next=None, labels=None):
         if img_next is not None:
             return img_pre.astype(np.float32), img_next.astype(np.float32), \
-                   boxes_pre, boxes_next, labels
+                   boxes_pre.astype(np.float32), boxes_next.astype(np.float32), labels
         else:
             return img_pre.astype(np.float32), img_next, \
-                   boxes_pre, boxes_next, labels
+                   boxes_pre.astype(np.float32), boxes_next, labels
 
 class MoveBoxes(object):
     """Randomly move the centers
@@ -619,7 +619,7 @@ class DANAugmentation(object):
                 FormatBoxes(),
                 ToTensor()
             ])
-        elif type == 'val':
+        elif type == 'val' or type == 'valid':
             self.augment = Compose([
                 ConvertFromInts(),
                 ToPercentCoords(),

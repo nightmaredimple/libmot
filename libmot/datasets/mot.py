@@ -40,7 +40,7 @@ class MOTReader(object):
             self.gt_file = osp.join(mot_folder, 'gt/gt.txt')
             self.info_file = osp.join(mot_folder, 'seqinfo.ini')
             self._check_dir([mot_folder, self.image_folder])
-            self._check_file([self.detection_file, self.gt_file, self.info_file])
+            self._check_file([self.detection_file, self.info_file])
         else:
             self.image_folder = osp.abspath(osp.expanduser(image_folder))
             self.detection_file = detection_file
@@ -52,7 +52,7 @@ class MOTReader(object):
         self.video_info = self.get_video_information(self.info_file)
         self.vis_thresh = vis_thresh
         self.detection_thresh = detection_thresh
-        self.image_format = os.path.join(self.image_folder, '{0:06d}.jpg')
+        self.image_format = osp.join(self.image_folder, '{0:06d}.jpg')
         self.track_length = self.video_info['length']
         if length > -1:
             self.track_length = length
@@ -109,8 +109,7 @@ class MOTReader(object):
             filepath of ground truth
 
         """
-        if gt_file is not None:
-            self._check_file([gt_file])
+        if gt_file is not None and osp.isfile(gt_file):
             gt = np.genfromtxt(gt_file, delimiter=',')
             length_filter = gt[:, 0] <= self.track_length
             active_filter = gt[:, 6] == 1

@@ -1,10 +1,10 @@
 io:
   mot_root: "data/MOT17"
   # log files and weights will be saved in log_folder
-  log_folder: "/data/hpp/log/"
+  log_folder: "/data/hpp/log/20200427_12_17_52"
   base_net_path: "models/DAN/vgg16_reducedfc.pth"
   # pretrained model path
-  resume:
+  resume: "/data/hpp/log/20200427_12_17_52/checkpoints/dan_70.pth.tar"
   # take gt information from "MOT17-XX-DPM"
   detector: "DPM"
   # filter out some sequences from training sets as valid sets

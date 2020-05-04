@@ -7,7 +7,7 @@ import numpy as np
 import torch
 
 
-def iou(bboxes, candidates, metric = 'origin'):
+def iou(bboxes, candidates, metric='origin'):
     """Compute intersection over union.
 
     Parameters
