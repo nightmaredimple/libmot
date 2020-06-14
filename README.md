@@ -65,7 +65,7 @@ python scripts/test_kalman_tracker.py
 
 ## Tracktor
 
-Our proposed MIFT and MIFD will be released upon the acceptance
+**Our proposed MIFT and MIFD will be released before August.**
 
 In MOT Challenge, the MIFT tracktor is named as ISE-MOT, the MIFD detector is named as ISE-MOTDet.
 
