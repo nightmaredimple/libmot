@@ -1,7 +1,7 @@
 addict==2.2.1
 matplotlib>=3.1.1
 motmetrics==1.1.3
-numpy==1.17.4
+numpy==1.22.0
 opencv-python==4.1.1.26
 ortools>=7.4.7247
 path.py==12.0.1
